@@ -1,187 +1,152 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>项目列表</title>
-    <style>
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 20px 0;
-        }
+<!-- apps/visual/templates/project_list.html -->
+{% extends 'base.html' %}
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
+{% block title %}项目列表{% endblock %}
 
-        th {
-            background-color: #f2f2f2;
-        }
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">项目列表</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'visual:project_add' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> 增加项目
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>项目名称</th>
+                                <th>到货日期</th>
+                                <th>供应商</th>
+                                <th>物资类别</th>
+                                <th>规格</th>
+                                <th>数量</th>
+                                <th>单价</th>
+                                <th>下浮率(%)</th>
+                                <th>合计金额</th>
+                                <th>品牌</th>
+                                <th>填报用户</th>
+                                <th>地区</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for project in projects %}
+                            <tr>
+                                <td>
+                                    {% if project.project_mapping %}
+                                        {{ project.project_mapping.project_name }}
+                                    {% else %}
+                                        未指定
+                                    {% endif %}
+                                </td>
+                                <td>{{ project.arrival_date|date:"Y-m-d" }}</td>
+                                <td>
+                                    {% if project.supplier %}
+                                        {{ project.supplier.supplier_name }}
+                                    {% else %}
+                                        未指定
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if project.category %}
+                                        {{ project.category.category_name }}
+                                    {% else %}
+                                        未指定
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if project.specification %}
+                                        {{ project.specification.specification_name }}
+                                    {% else %}
+                                        未指定
+                                    {% endif %}
+                                </td>
+                                <td>{{ project.quantity }}</td>
+                                <td>{{ project.unit_price }}</td>
+                                <td>
+                                    {% if project.discount_rate %}
+                                        {{ project.discount_rate }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if project.total_amount %}
+                                        {{ project.total_amount }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if project.brand %}
+                                        {{ project.brand.brand_name }}
+                                    {% else %}
+                                        未指定
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if project.user %}
+                                        {{ project.user.username }}
+                                    {% else %}
+                                        未知用户
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if project.project_mapping and project.project_mapping.region %}
+                                        {{ project.project_mapping.region }}
+                                    {% else %}
+                                        未指定
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="12" style="text-align: center;">暂无项目数据</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
 
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
+                    <!-- 分页控件 -->
+                    {% if projects.has_other_pages %}
+                    <div class="pagination-wrapper">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if projects.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">&laquo; 首页</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ projects.previous_page_number }}">上一页</a>
+                                    </li>
+                                {% endif %}
 
-        .pagination {
-            margin: 20px 0;
-            text-align: center;
-        }
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        第 {{ projects.number }} 页，共 {{ projects.paginator.num_pages }} 页
+                                    </span>
+                                </li>
 
-        .pagination a, .pagination span {
-            padding: 8px 16px;
-            text-decoration: none;
-            border: 1px solid #ddd;
-            margin: 0 4px;
-        }
-
-        .pagination a:hover {
-            background-color: #eee;
-        }
-
-        .pagination .current {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .actions {
-            margin: 20px 0;
-        }
-
-        .actions a {
-            padding: 10px 15px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-
-        .actions a:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-    <h1>项目列表</h1>
-
-    <div class="actions">
-        <a href="{% url 'visual:project_add' %}">增加项目</a>
+                                {% if projects.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ projects.next_page_number }}">下一页</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ projects.paginator.num_pages }}">末页 &raquo;</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>项目名称</th>
-                <th>到货日期</th>
-                <th>供应商</th>
-                <th>物资类别</th>
-                <th>规格</th>
-                <th>数量</th>
-                <th>单价</th>
-                <th>下浮率(%)</th>
-                <th>合计金额</th>
-                <th>品牌</th>
-                <th>填报用户</th>
-                <th>地区</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for project in projects %}
-            <tr>
-                <td>
-                    {% if project.project_mapping %}
-                        {{ project.project_mapping.project_name }}
-                    {% else %}
-                        未指定
-                    {% endif %}
-                </td>
-                <td>{{ project.arrival_date|date:"Y-m-d" }}</td>
-                <td>
-                    {% if project.supplier %}
-                        {{ project.supplier.supplier_name }}
-                    {% else %}
-                        未指定
-                    {% endif %}
-                </td>
-                <td>
-                    {% if project.category %}
-                        {{ project.category.category_name }}
-                    {% else %}
-                        未指定
-                    {% endif %}
-                </td>
-                <td>
-                    {% if project.specification %}
-                        {{ project.specification.specification_name }}
-                    {% else %}
-                        未指定
-                    {% endif %}
-                </td>
-                <td>{{ project.quantity }}</td>
-                <td>{{ project.unit_price }}</td>
-                <td>
-                    {% if project.discount_rate %}
-                        {{ project.discount_rate }}
-                    {% else %}
-                        0
-                    {% endif %}
-                </td>
-                <td>
-                    {% if project.total_amount %}
-                        {{ project.total_amount }}
-                    {% else %}
-                        0
-                    {% endif %}
-                </td>
-                <td>
-                    {% if project.brand %}
-                        {{ project.brand.brand_name }}
-                    {% else %}
-                        未指定
-                    {% endif %}
-                </td>
-                <td>
-                    {% if project.user %}
-                        {{ project.user.username }}
-                    {% else %}
-                        未知用户
-                    {% endif %}
-                </td>
-                <td>
-                    {% if project.project_mapping and project.project_mapping.region %}
-                        {{ project.project_mapping.region }}
-                    {% else %}
-                        未指定
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="12" style="text-align: center;">暂无项目数据</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- 分页控件 -->
-    {% if projects.has_other_pages %}
-    <div class="pagination">
-        <span class="page-links">
-            {% if projects.has_previous %}
-                <a href="?page=1">&laquo; 首页</a>
-                <a href="?page={{ projects.previous_page_number }}">上一页</a>
-            {% endif %}
-
-            <span class="current">
-                第 {{ projects.number }} 页，共 {{ projects.paginator.num_pages }} 页
-            </span>
-
-            {% if projects.has_next %}
-                <a href="?page={{ projects.next_page_number }}">下一页</a>
-                <a href="?page={{ projects.paginator.num_pages }}">末页 &raquo;</a>
-            {% endif %}
-        </span>
-    </div>
-    {% endif %}
-</body>
-</html>
+</div>
+{% endblock %}

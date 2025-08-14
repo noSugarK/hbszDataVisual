@@ -1,0 +1,48 @@
+<!-- templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}数据可视化系统{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="{% static 'bootstrap-5.3.0/css/bootstrap.min.css' %}" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="{% static 'fontawesome-7.0.0/css/all.min.css' %}">
+    {% block extra_css %}
+        <link href="{% static 'css/custom.css' %}" rel="stylesheet">
+    {% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <!-- 页头 -->
+        {% include 'header.html' %}
+
+        <!-- 主要内容 -->
+        <main class="container-fluid mt-4">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}
+            <!-- 页面内容将在这里插入 -->
+            {% endblock %}
+        </main>
+
+        <!-- 页脚 -->
+        {% include 'footer.html' %}
+    </div>
+
+    <!-- jQuery -->
+    <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+    <!-- Bootstrap JS -->
+    <script src="{% static 'bootstrap-5.3.0/js/bootstrap.bundle.min.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

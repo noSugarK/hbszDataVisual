@@ -1,4 +1,4 @@
-<!-- apps/common/templates/header.html -->
+<!-- templates/header.html -->
 <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
@@ -14,6 +14,12 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'common:home' %}">首页</a>
                     </li>
+                    <!-- 只有管理员才能看到仪表盘链接 -->
+                    {% if user.is_authenticated and user.is_admin or user.is_staff %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'visual:dashboard' %}">仪表盘</a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             项目管理
@@ -26,17 +32,35 @@
                             <li><a class="dropdown-item" href="{% url 'visual:project_mapping_list' %}">项目映射列表</a></li>
                         </ul>
                     </li>
+
+                    {% if user.is_authenticated and user.is_admin or user.is_staff %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            用户管理
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'users:user_list' %}">用户列表</a></li>
+                            <li><a class="dropdown-item" href="{% url 'users:user_register' %}">注册用户</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
                 </ul>
 
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <span class="navbar-text me-3">
-                            欢迎, {{ user.username }}!
-                        </span>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'users:logout' %}">退出</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'users:profile' %}">个人资料</a></li>
+                            <!-- 只有管理员才能看到仪表盘链接 -->
+                            {% if user.is_admin or user.is_staff %}
+                            <li><a class="dropdown-item" href="{% url 'visual:dashboard' %}">仪表盘</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'users:logout' %}">退出</a></li>
+                        </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">

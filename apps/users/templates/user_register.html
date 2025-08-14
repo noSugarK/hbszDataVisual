@@ -1,0 +1,103 @@
+<!-- apps/users/templates/user_register.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label">用户名 *</label>
+                                    {{ form.username }}
+                                    {% if form.username.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.username.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label">邮箱 *</label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.email.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.phone.id_for_label }}" class="form-label">手机号 *</label>
+                                    {{ form.phone }}
+                                    {% if form.phone.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.phone.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.password1.id_for_label }}" class="form-label">密码 *</label>
+                                    {{ form.password1 }}
+                                    {% if form.password1.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.password1.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        <small>密码至少包含8个字符</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.password2.id_for_label }}" class="form-label">确认密码 *</label>
+                                    {{ form.password2 }}
+                                    {% if form.password2.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.password2.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary">注册用户</button>
+                            <a href="{% url 'users:user_list' %}" class="btn btn-secondary">返回列表</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

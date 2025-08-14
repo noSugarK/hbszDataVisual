@@ -1,38 +1,84 @@
 <!-- apps/visual/templates/project_mapping_list.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>项目映射列表</title>
-</head>
-<body>
-    <h1>项目映射列表</h1>
+{% extends 'base.html' %}
 
-    <div>
-        <a href="{% url 'visual:project_mapping_add' %}">添加项目映射</a>
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'visual:project_mapping_add' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> 添加项目映射
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if mappings %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>项目名称</th>
+                                        <th>地区</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mapping in mappings %}
+                                    <tr>
+                                        <td>{{ mapping.id }}</td>
+                                        <td>{{ mapping.project_name }}</td>
+                                        <td>{{ mapping.region }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 分页 -->
+                        {% if mappings.has_other_pages %}
+                        <div class="pagination-wrapper">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center">
+                                    {% if mappings.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1">&laquo; 首页</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ mappings.previous_page_number }}">上一页</a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            第 {{ mappings.number }} 页，共 {{ mappings.paginator.num_pages }} 页
+                                        </span>
+                                    </li>
+
+                                    {% if mappings.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ mappings.next_page_number }}">下一页</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ mappings.paginator.num_pages }}">末页 &raquo;</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>暂无项目映射数据。</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
-    <br>
-
-    {% if mappings %}
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>项目名称</th>
-                    <th>地区</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for mapping in mappings %}
-                <tr>
-                    <td>{{ mapping.id }}</td>
-                    <td>{{ mapping.project_name }}</td>
-                    <td>{{ mapping.region }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>暂无项目映射数据。</p>
-    {% endif %}
-</body>
-</html>
+</div>
+{% endblock %}

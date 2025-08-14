@@ -1,4 +1,4 @@
-<!-- apps/users/templates/profile.html -->
+<!-- apps/users/templates/user_detail.html -->
 {% extends 'base.html' %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -16,16 +16,20 @@
                         <div class="col-md-6">
                             <table class="table table-borderless">
                                 <tr>
+                                    <td><strong>用户ID:</strong></td>
+                                    <td>{{ view_user.id }}</td>
+                                </tr>
+                                <tr>
                                     <td><strong>用户名:</strong></td>
-                                    <td>{{ user.username }}</td>
+                                    <td>{{ view_user.username }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>邮箱:</strong></td>
-                                    <td>{{ user.email|default:"未填写" }}</td>
+                                    <td>{{ view_user.email|default:"未填写" }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>手机号:</strong></td>
-                                    <td>{{ user.phone|default:"未填写" }}</td>
+                                    <td>{{ view_user.phone|default:"未填写" }}</td>
                                 </tr>
                             </table>
                         </div>
@@ -35,7 +39,7 @@
                                 <tr>
                                     <td><strong>是否管理员:</strong></td>
                                     <td>
-                                        {% if user.is_admin %}
+                                        {% if view_user.is_admin %}
                                             <span class="badge bg-success">是</span>
                                         {% else %}
                                             <span class="badge bg-secondary">否</span>
@@ -45,7 +49,7 @@
                                 <tr>
                                     <td><strong>是否激活:</strong></td>
                                     <td>
-                                        {% if user.is_active %}
+                                        {% if view_user.is_active %}
                                             <span class="badge bg-success">是</span>
                                         {% else %}
                                             <span class="badge bg-danger">否</span>
@@ -53,11 +57,27 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td><strong>是否员工:</strong></td>
+                                    <td>
+                                        {% if view_user.is_staff %}
+                                            <span class="badge bg-success">是</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">否</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td><strong>注册时间:</strong></td>
-                                    <td>{{ user.date_joined|date:"Y-m-d H:i:s" }}</td>
+                                    <td>{{ view_user.date_joined|date:"Y-m-d H:i:s" }}</td>
                                 </tr>
                             </table>
                         </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="{% url 'users:user_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> 返回列表
+                        </a>
                     </div>
                 </div>
             </div>

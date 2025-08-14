@@ -1,4 +1,6 @@
 # apps/visual/views.py
+from functools import wraps
+
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -10,6 +12,20 @@ from .models import Project, ProjectMapping, Specification, MaterialCategory, Br
 from ..common.models import Region, ConcretePrice, Supplier
 from ..users.models import User
 from .forms import ProjectForm, ProjectMappingForm
+
+def admin_required(view_func):
+    """
+    自定义装饰器，只允许管理员访问
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('users:login')
+        if not (request.user.is_admin or request.user.is_staff):
+            messages.error(request, '您没有权限访问此页面。')
+            return redirect('common:home')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 
 # 用于调试的视图
@@ -150,26 +166,35 @@ def project_list(request):
     return render(request, 'project_list.html', {'projects': projects})
 
 
-
+@admin_required
 @login_required
 def dashboard(request):
-    """可视化仪表板"""
-    # 获取当前用户的数据（普通用户）或所有数据（管理员）
-    if request.user.is_admin():
-        projects = Project.objects.all()
-        concrete_prices = ConcretePrice.objects.all()
-    else:
-        projects = Project.objects.filter(user=request.user)
-        concrete_prices = ConcretePrice.objects.all()
+    """可视化仪表板 - 仅管理员可见"""
+    # 获取所有数据（仅管理员可见）
+    projects = Project.objects.all()
+    concrete_prices = ConcretePrice.objects.all()
+    users = User.objects.all()
+    project_mappings = ProjectMapping.objects.all()
 
     context = {
         'projects_count': projects.count(),
-        'users_count': User.objects.count() if request.user.is_admin() else 0,
+        'users_count': users.count(),
         'regions_count': Region.objects.count(),
-        'title': '数据可视化'
+        'project_mappings_count': project_mappings.count(),
+        'suppliers_count': Supplier.objects.count(),
+        'categories_count': MaterialCategory.objects.count(),
+        'brands_count': Brand.objects.count(),
+        'recent_projects': projects.select_related(
+            'project_mapping__region',
+            'supplier',
+            'category',
+            'specification',
+            'brand',
+            'user'
+        ).order_by('-arrival_date')[:5],  # 最近5个项目
+        'title': '数据可视化仪表板'
     }
     return render(request, 'dashboard.html', context)
-
 
 @login_required
 def chart_data(request):

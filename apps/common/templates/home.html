@@ -1,21 +1,119 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ title }} - HBSZ</title>
-</head>
-<body>
-{% include 'header.html' %}
-<div class="container">
+<!-- apps/common/templates/home.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
     <div class="row">
-        <div class="col-md-12">
-            <div class="jumbotron">
-                <h1>{{ title }}</h1>
-                <p>{{ content }}</p>
+        <div class="col-12">
+            <div class="jumbotron bg-light rounded p-5 text-center">
+                <h1 class="display-4">{{ title }}</h1>
+                <p class="lead">欢迎使用数据可视化系统</p>
+                <hr class="my-4">
+                <p>本系统用于项目数据管理和可视化分析</p>
+
+                {% if user.is_authenticated %}
+                    <div class="mt-4">
+                        <a class="btn btn-primary btn-lg me-2" href="{% url 'visual:project_add' %}" role="button">
+                            <i class="fas fa-plus"></i> 添加项目数据
+                        </a>
+                        <a class="btn btn-outline-primary btn-lg" href="{% url 'visual:project_list' %}" role="button">
+                            <i class="fas fa-list"></i> 查看项目列表
+                        </a>
+                        <!-- 只有管理员才能看到仪表盘链接 -->
+                        {% if user.is_admin or user.is_staff %}
+                        <a class="btn btn-info btn-lg ms-2" href="{% url 'visual:dashboard' %}" role="button">
+                            <i class="fas fa-tachometer-alt"></i> 仪表盘
+                        </a>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="mt-4">
+                        <a class="btn btn-primary btn-lg" href="{% url 'users:login' %}" role="button">
+                            <i class="fas fa-sign-in-alt"></i> 登录系统
+                        </a>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- 系统功能介绍 -->
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-database fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">数据管理</h5>
+                    <p class="card-text">支持项目数据的录入、修改和删除操作，确保数据的完整性和准确性。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-bar fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">数据可视化</h5>
+                    <p class="card-text">提供丰富的图表展示功能，帮助用户直观地分析和理解数据。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">用户管理</h5>
+                    <p class="card-text">完善的用户权限管理系统，确保数据安全和操作规范。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统统计信息（仅管理员可见） -->
+    {% if user.is_authenticated and user.is_admin or user.is_staff %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie"></i> 系统统计
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="stat-card bg-primary text-white p-3 rounded">
+                                <h3>{{ projects_count|default:0 }}</h3>
+                                <p class="mb-0">项目总数</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card bg-success text-white p-3 rounded">
+                                <h3>{{ users_count|default:0 }}</h3>
+                                <p class="mb-0">用户总数</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card bg-info text-white p-3 rounded">
+                                <h3>{{ regions_count|default:0 }}</h3>
+                                <p class="mb-0">地区数量</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card bg-warning text-white p-3 rounded">
+                                <h3>{{ project_mappings_count|default:0 }}</h3>
+                                <p class="mb-0">项目映射</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
-{% include 'footer.html' %}
-</body>
-</html>
+{% endblock %}
