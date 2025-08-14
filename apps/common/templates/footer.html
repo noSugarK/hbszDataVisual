@@ -1,0 +1,10 @@
+<!-- apps/common/templates/footer.html -->
+<footer class="bg-light text-center text-muted py-3 mt-4">
+    <div class="container-fluid">
+        <p class="mb-0">&copy; {% now "Y" %} 数据可视化系统. All rights reserved.</p>
+        <p class="mb-0">
+            <a href="{% url 'common:about' %}">关于我们</a> |
+            <a href="{% url 'common:help' %}">帮助</a>
+        </p>
+    </div>
+</footer>

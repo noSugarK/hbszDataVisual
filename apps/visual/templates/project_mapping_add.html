@@ -1,0 +1,41 @@
+<!-- apps/visual/templates/project_mapping_add.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>添加项目映射</title>
+</head>
+<body>
+    <h1>添加项目映射</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="color: {% if message.tags == 'error' %}red{% else %}green{% endif %};">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div>
+            <label for="project_name">项目名称:</label>
+            <input type="text" id="project_name" name="project_name" required>
+        </div>
+        <br>
+        <div>
+            <label for="region">地区:</label>
+            <select id="region" name="region" required>
+                <option value="">请选择地区</option>
+                {% for region in regions %}
+                    <option value="{{ region.id }}">{{ region }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <br>
+        <div>
+            <button type="submit">添加项目映射</button>
+            <a href="{% url 'visual:project_mapping_list' %}">查看项目映射列表</a>
+        </div>
+    </form>
+</body>
+</html>

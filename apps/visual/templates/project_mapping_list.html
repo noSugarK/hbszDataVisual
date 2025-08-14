@@ -1,0 +1,38 @@
+<!-- apps/visual/templates/project_mapping_list.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>项目映射列表</title>
+</head>
+<body>
+    <h1>项目映射列表</h1>
+
+    <div>
+        <a href="{% url 'visual:project_mapping_add' %}">添加项目映射</a>
+    </div>
+    <br>
+
+    {% if mappings %}
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>项目名称</th>
+                    <th>地区</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mapping in mappings %}
+                <tr>
+                    <td>{{ mapping.id }}</td>
+                    <td>{{ mapping.project_name }}</td>
+                    <td>{{ mapping.region }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>暂无项目映射数据。</p>
+    {% endif %}
+</body>
+</html>
