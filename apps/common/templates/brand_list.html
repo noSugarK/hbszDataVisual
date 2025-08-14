@@ -1,0 +1,97 @@
+<!-- apps/common/templates/brand_list.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'common:brand_add' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> 添加品牌
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if brands %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>品牌名称</th>
+                                        <th>描述</th>
+                                        <th>关联项目数</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for brand in brands %}
+                                    <tr>
+                                        <td>{{ brand.id }}</td>
+                                        <td>{{ brand.brand_name }}</td>
+                                        <td>{{ brand.description|default:"无描述" }}</td>
+                                        <td>{{ brand.project_set.count }}</td>
+                                        <td>
+                                            <a href="{% url 'common:brand_edit' brand.id %}" class="btn btn-sm btn-primary" title="编辑">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if brand.project_set.count == 0 %}
+                                            <a href="{% url 'common:brand_delete' brand.id %}" class="btn btn-sm btn-danger" title="删除">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 分页 -->
+                        {% if brands.has_other_pages %}
+                        <div class="pagination-wrapper">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center">
+                                    {% if brands.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1">&laquo; 首页</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ brands.previous_page_number }}">上一页</a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            第 {{ brands.number }} 页，共 {{ brands.paginator.num_pages }} 页
+                                        </span>
+                                    </li>
+
+                                    {% if brands.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ brands.next_page_number }}">下一页</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ brands.paginator.num_pages }}">末页 &raquo;</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>暂无品牌数据。</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 # apps/visual/models.py
 from django.db import models
-from ..common.models import Region, Supplier
+from ..common.models import Region, Supplier, Brand
 from ..users.models import User
 
 class MaterialCategory(models.Model):
@@ -34,22 +34,6 @@ class Specification(models.Model):
 
     def __str__(self):
         return f"{self.category.category_name} - {self.specification_name}"
-
-class Brand(models.Model):
-    """
-    品牌表
-    """
-    id = models.AutoField(primary_key=True)
-    brand_name = models.CharField('品牌名称', max_length=100, unique=True)
-    description = models.TextField('品牌描述', blank=True, null=True)
-
-    class Meta:
-        db_table = 'BRAND'
-        verbose_name = '品牌'
-        verbose_name_plural = '品牌'
-
-    def __str__(self):
-        return self.brand_name
 
 class ProjectMapping(models.Model):
     """

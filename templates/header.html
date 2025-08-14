@@ -25,13 +25,32 @@
                             项目管理
                         </a>
                         <ul class="dropdown-menu">
+                            <!-- 只有管理员才能添加项目 -->
+                            {% if user.is_admin or user.is_staff %}
                             <li><a class="dropdown-item" href="{% url 'visual:project_add' %}">添加项目</a></li>
+                            {% endif %}
                             <li><a class="dropdown-item" href="{% url 'visual:project_list' %}">项目列表</a></li>
                             <li><hr class="dropdown-divider"></li>
+                            <!-- 只有管理员才能管理项目映射 -->
+                            {% if user.is_admin or user.is_staff %}
                             <li><a class="dropdown-item" href="{% url 'visual:project_mapping_add' %}">添加项目映射</a></li>
+                            {% endif %}
                             <li><a class="dropdown-item" href="{% url 'visual:project_mapping_list' %}">项目映射列表</a></li>
                         </ul>
                     </li>
+
+                    <!-- 只有管理员才能看到基础数据管理 -->
+                    {% if user.is_authenticated and user.is_admin or user.is_staff %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            基础数据
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'common:supplier_list' %}">供应商管理</a></li>
+                            <li><a class="dropdown-item" href="{% url 'common:brand_list' %}">品牌管理</a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
 
                     {% if user.is_authenticated and user.is_admin or user.is_staff %}
                     <li class="nav-item dropdown">
