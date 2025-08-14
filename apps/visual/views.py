@@ -2,7 +2,7 @@
 from functools import wraps
 
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Sum, Avg
@@ -90,9 +90,115 @@ def project_add(request):
     }
 
     return render(request, 'project_add.html', context)
+@login_required
+def project_list(request):
+    """
+    查看所有项目信息
+    """
+    # 获取所有项目数据，包含关联信息
+    projects_list = Project.objects.select_related(
+        'project_mapping__region',  # 项目映射及其地区
+        'supplier',                 # 供应商
+        'category',                 # 物资类别
+        'specification',            # 规格
+        'brand',                    # 品牌
+        'user'                      # 用户
+    ).all()
+
+    # 创建Paginator对象，每页显示20条数据
+    paginator = Paginator(projects_list, 20)
+    # 获取当前页码
+    page_number = request.GET.get('page')
+    # 获取当前页的项目数据
+    projects = paginator.get_page(page_number)
+
+    return render(request, 'project_list.html', {'projects': projects})
 
 
-# @login_required
+@login_required
+def project_detail(request, project_id):
+    """查看项目详情"""
+    project = get_object_or_404(Project, id=project_id)
+
+    # 检查权限：管理员可以查看所有项目，普通用户只能查看自己的项目
+    if not request.user.is_admin and not request.user.is_staff and project.user != request.user:
+        messages.error(request, '您没有权限查看此项目。')
+        return redirect('visual:project_list')
+
+    context = {
+        'project': project,
+        'title': '项目详情'
+    }
+    return render(request, 'project_detail.html', context)
+
+
+@login_required
+def project_edit(request, project_id):
+    """编辑项目"""
+    project = get_object_or_404(Project, id=project_id)
+
+    # 检查权限：管理员可以编辑所有项目，普通用户只能编辑自己的项目
+    if not request.user.is_admin and not request.user.is_staff and project.user != request.user:
+        messages.error(request, '您没有权限编辑此项目。')
+        return redirect('visual:project_list')
+
+    if request.method == 'POST':
+        form = ProjectForm(request.POST, instance=project)
+        if form.is_valid():
+            project = form.save(commit=False)
+            # 保持原有的用户信息
+            project.user = project.user  # 保持原有用户
+            project.save()
+            messages.success(request, '项目信息更新成功！')
+            return redirect('visual:project_detail', project_id=project.id)
+        else:
+            messages.error(request, '表单数据有误，请检查后重新提交。')
+    else:
+        form = ProjectForm(instance=project)
+
+    # 获取所有项目映射数据，包含地区信息
+    project_mappings = ProjectMapping.objects.select_related('region').all()
+    categories = MaterialCategory.objects.all()
+    brands = Brand.objects.all()
+    suppliers = Supplier.objects.all()  # 获取所有供应商
+
+    context = {
+        'form': form,
+        'project': project,
+        'project_mappings': project_mappings,
+        'categories': categories,
+        'brands': brands,
+        'suppliers': suppliers,
+        'user': request.user,
+        'title': '编辑项目'
+    }
+    return render(request, 'project_edit.html', context)
+
+
+@login_required
+def project_delete(request, project_id):
+    """删除项目"""
+    project = get_object_or_404(Project, id=project_id)
+
+    # 检查权限：管理员可以删除所有项目，普通用户只能删除自己的项目
+    if not request.user.is_admin and not request.user.is_staff and project.user != request.user:
+        messages.error(request, '您没有权限删除此项目。')
+        return redirect('visual:project_list')
+
+    if request.method == 'POST':
+        project_name = project.project_mapping.project_name if project.project_mapping else '未知项目'
+        project.delete()
+        messages.success(request, f'项目 "{project_name}" 删除成功！')
+        return redirect('visual:project_list')
+
+    context = {
+        'project': project,
+        'title': '删除项目'
+    }
+    return render(request, 'project_delete.html', context)
+
+
+@login_required
 def project_mapping_add(request):
     """
     添加项目映射信息
@@ -125,7 +231,7 @@ def project_mapping_add(request):
     return render(request, 'project_mapping_add.html', context)
 
 
-# @login_required
+@login_required
 def project_mapping_list(request):
     """
     显示所有项目映射信息
@@ -140,30 +246,6 @@ def project_mapping_list(request):
         'title': '项目映射列表'
     }
     return render(request, 'project_mapping_list.html', context)
-
-
-def project_list(request):
-    """
-    查看所有项目信息
-    """
-    # 获取所有项目数据，包含关联信息
-    projects_list = Project.objects.select_related(
-        'project_mapping__region',  # 项目映射及其地区
-        'supplier',                 # 供应商
-        'category',                 # 物资类别
-        'specification',            # 规格
-        'brand',                    # 品牌
-        'user'                      # 用户
-    ).all()
-
-    # 创建Paginator对象，每页显示20条数据
-    paginator = Paginator(projects_list, 20)
-    # 获取当前页码
-    page_number = request.GET.get('page')
-    # 获取当前页的项目数据
-    projects = paginator.get_page(page_number)
-
-    return render(request, 'project_list.html', {'projects': projects})
 
 
 @admin_required
@@ -195,6 +277,88 @@ def dashboard(request):
         'title': '数据可视化仪表板'
     }
     return render(request, 'dashboard.html', context)
+
+
+@login_required
+def project_mapping_detail(request, mapping_id):
+    """查看项目映射详情"""
+    mapping = get_object_or_404(ProjectMapping, id=mapping_id)
+
+    # 检查权限：只有管理员可以查看项目映射详情
+    if not request.user.is_admin and not request.user.is_staff:
+        messages.error(request, '您没有权限查看项目映射详情。')
+        return redirect('visual:project_mapping_list')
+
+    context = {
+        'mapping': mapping,
+        'title': '项目映射详情'
+    }
+    return render(request, 'project_mapping_detail.html', context)
+
+
+@login_required
+def project_mapping_edit(request, mapping_id):
+    """编辑项目映射"""
+    mapping = get_object_or_404(ProjectMapping, id=mapping_id)
+
+    # 检查权限：只有管理员可以编辑项目映射
+    if not request.user.is_admin and not request.user.is_staff:
+        messages.error(request, '您没有权限编辑项目映射。')
+        return redirect('visual:project_mapping_list')
+
+    if request.method == 'POST':
+        project_name = request.POST.get('project_name')
+        region_id = request.POST.get('region')
+
+        if project_name and region_id:
+            try:
+                region = Region.objects.get(id=region_id)
+                mapping.project_name = project_name
+                mapping.region = region
+                mapping.save()
+                messages.success(request, '项目映射更新成功！')
+                return redirect('visual:project_mapping_detail', mapping_id=mapping.id)
+            except Region.DoesNotExist:
+                messages.error(request, '选择的地区不存在！')
+        else:
+            messages.error(request, '请填写所有必填字段！')
+    else:
+        regions = Region.objects.all()
+
+        context = {
+            'mapping': mapping,
+            'regions': regions,
+            'title': '编辑项目映射'
+        }
+        return render(request, 'project_mapping_edit.html', context)
+
+
+@login_required
+def project_mapping_delete(request, mapping_id):
+    """删除项目映射"""
+    mapping = get_object_or_404(ProjectMapping, id=mapping_id)
+
+    # 检查权限：只有管理员可以删除项目映射
+    if not request.user.is_admin and not request.user.is_staff:
+        messages.error(request, '您没有权限删除项目映射。')
+        return redirect('visual:project_mapping_list')
+
+    if request.method == 'POST':
+        # 检查是否有项目关联到这个映射
+        if mapping.project_set.exists():
+            messages.error(request, '无法删除该项目映射，因为还有项目关联到它。请先删除相关项目。')
+            return redirect('visual:project_mapping_detail', mapping_id=mapping.id)
+
+        mapping_name = mapping.project_name
+        mapping.delete()
+        messages.success(request, f'项目映射 "{mapping_name}" 删除成功！')
+        return redirect('visual:project_mapping_list')
+
+    context = {
+        'mapping': mapping,
+        'title': '删除项目映射'
+    }
+    return render(request, 'project_mapping_delete.html', context)
 
 @login_required
 def chart_data(request):

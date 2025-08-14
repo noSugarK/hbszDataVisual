@@ -1,0 +1,57 @@
+<!-- apps/visual/templates/project_mapping_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>项目名称:</strong></td>
+                                    <td>{{ mapping.project_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>地区:</strong></td>
+                                    <td>{{ mapping.region }}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>关联项目数:</strong></td>
+                                    <td>{{ mapping.project_set.count }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="{% url 'visual:project_mapping_edit' mapping.id %}" class="btn btn-primary">
+                            <i class="fas fa-edit"></i> 编辑
+                        </a>
+                        {% if mapping.project_set.count == 0 %}
+                        <a href="{% url 'visual:project_mapping_delete' mapping.id %}" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> 删除
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'visual:project_mapping_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> 返回列表
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

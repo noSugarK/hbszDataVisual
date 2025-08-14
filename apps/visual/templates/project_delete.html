@@ -1,0 +1,75 @@
+<!-- apps/visual/templates/project_delete.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h4><i class="fas fa-exclamation-triangle"></i> 警告</h4>
+                        <p>您确定要删除以下项目吗？此操作不可撤销。</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>项目名称:</strong></td>
+                                    <td>
+                                        {% if project.project_mapping %}
+                                            {{ project.project_mapping.project_name }}
+                                        {% else %}
+                                            未指定
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>到货日期:</strong></td>
+                                    <td>{{ project.arrival_date|date:"Y-m-d" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>供应商:</strong></td>
+                                    <td>
+                                        {% if project.supplier %}
+                                            {{ project.supplier.supplier_name }}
+                                        {% else %}
+                                            未指定
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>物资类别:</strong></td>
+                                    <td>
+                                        {% if project.category %}
+                                            {{ project.category.category_name }}
+                                        {% else %}
+                                            未指定
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> 确认删除
+                        </button>
+                        <a href="{% url 'visual:project_detail' project.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> 取消
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
