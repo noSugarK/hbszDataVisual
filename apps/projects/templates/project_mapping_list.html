@@ -1,4 +1,4 @@
-<!-- apps/visual/templates/project_mapping_list.html -->
+<!-- apps/projects/templates/project_mapping_list.html -->
 {% extends 'base.html' %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -11,7 +11,7 @@
                 <div class="card-header">
                     <h3 class="card-title">{{ title }}</h3>
                     <div class="card-tools">
-                        <a href="{% url 'visual:project_mapping_add' %}" class="btn btn-primary btn-sm">
+                        <a href="{% url 'projects:project_mapping_add' %}" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus"></i> 添加项目映射
                         </a>
                     </div>
@@ -34,15 +34,15 @@
                                         <td>{{ mapping.project_name }}</td>
                                         <td>{{ mapping.region }}</td>
                                         <td>
-                                            <a href="{% url 'visual:project_mapping_detail' mapping.id %}" class="btn btn-sm btn-info" title="查看">
+                                            <a href="{% url 'projects:project_mapping_detail' mapping.id %}" class="btn btn-sm btn-info" title="查看">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             {% if user.is_admin or user.is_staff %}
-                                            <a href="{% url 'visual:project_mapping_edit' mapping.id %}" class="btn btn-sm btn-primary" title="编辑">
+                                            <a href="{% url 'projects:project_mapping_edit' mapping.id %}" class="btn btn-sm btn-primary" title="编辑">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             {% if mapping.project_set.count == 0 %}
-                                            <a href="{% url 'visual:project_mapping_delete' mapping.id %}" class="btn btn-sm btn-danger" title="删除">
+                                            <a href="{% url 'projects:project_mapping_delete' mapping.id %}" class="btn btn-sm btn-danger" title="删除">
                                                 <i class="fas fa-trash"></i>
                                             </a>
                                             {% endif %}

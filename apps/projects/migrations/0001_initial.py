@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('specification_name', models.CharField(max_length=200, verbose_name='规格名称')),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='visual.materialcategory', verbose_name='物资类别')),
+                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='projects.materialcategory', verbose_name='物资类别')),
             ],
             options={
                 'verbose_name': '规格',
@@ -80,11 +80,11 @@ class Migration(migrations.Migration):
                 ('discount_rate', models.DecimalField(blank=True, decimal_places=2, max_digits=15, null=True, verbose_name='下浮率')),
                 ('total_amount', models.DecimalField(blank=True, decimal_places=2, max_digits=15, null=True, verbose_name='合计')),
                 ('brand', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='common.brand', verbose_name='品牌')),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='visual.materialcategory', verbose_name='物资类别')),
+                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='projects.materialcategory', verbose_name='物资类别')),
                 ('supplier', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='common.supplier', verbose_name='供应商')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL, verbose_name='填报用户')),
-                ('project_mapping', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='visual.projectmapping', verbose_name='项目映射')),
-                ('specification', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='visual.specification', verbose_name='规格')),
+                ('project_mapping', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='projects.projectmapping', verbose_name='项目映射')),
+                ('specification', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='projects.specification', verbose_name='规格')),
             ],
             options={
                 'verbose_name': '项目',

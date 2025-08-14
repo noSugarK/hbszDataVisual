@@ -23,7 +23,7 @@ def user_login(request):
                 login(request, user)
                 messages.success(request, f'欢迎回来，{username}！')
                 # 修复重定向逻辑
-                next_page = request.GET.get('next', 'visual:dashboard')  # 默认重定向到仪表板
+                next_page = request.GET.get('next', 'projects:dashboard')  # 默认重定向到仪表板
                 try:
                     return redirect(next_page)
                 except:

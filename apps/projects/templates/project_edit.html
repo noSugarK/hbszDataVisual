@@ -1,4 +1,4 @@
-<!-- apps/visual/templates/project_edit.html -->
+<!-- apps/projects/templates/project_edit.html -->
 {% extends 'base.html' %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -106,7 +106,7 @@
                         </div>
 
                         <button type="submit" class="btn btn-primary">更新项目</button>
-                        <a href="{% url 'visual:project_detail' project.id %}" class="btn btn-secondary" style="margin-left: 10px;">取消</a>
+                        <a href="{% url 'projects:project_detail' project.id %}" class="btn btn-secondary" style="margin-left: 10px;">取消</a>
                     </form>
                 </div>
             </div>
@@ -185,7 +185,7 @@ $(document).ready(function() {
             specificationSelect.empty().append('<option value="">加载中...</option>');
 
             $.ajax({
-                url: '{% url "visual:get_specifications" %}',
+                url: '{% url "projects:get_specifications" %}',
                 data: {'category_id': categoryId},
                 success: function(data) {
                     specificationSelect.empty();

@@ -17,7 +17,7 @@
                     <!-- 只有管理员才能看到仪表盘链接 -->
                     {% if user.is_authenticated and user.is_admin or user.is_staff %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'visual:dashboard' %}">仪表盘</a>
+                        <a class="nav-link" href="{% url 'projects:dashboard' %}">仪表盘</a>
                     </li>
                     {% endif %}
                     <li class="nav-item dropdown">
@@ -27,15 +27,15 @@
                         <ul class="dropdown-menu">
                             <!-- 只有管理员才能添加项目 -->
                             {% if user.is_admin or user.is_staff %}
-                            <li><a class="dropdown-item" href="{% url 'visual:project_add' %}">添加项目</a></li>
+                            <li><a class="dropdown-item" href="{% url 'projects:project_add' %}">添加项目</a></li>
                             {% endif %}
-                            <li><a class="dropdown-item" href="{% url 'visual:project_list' %}">项目列表</a></li>
+                            <li><a class="dropdown-item" href="{% url 'projects:project_list' %}">项目列表</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <!-- 只有管理员才能管理项目映射 -->
                             {% if user.is_admin or user.is_staff %}
-                            <li><a class="dropdown-item" href="{% url 'visual:project_mapping_add' %}">添加项目映射</a></li>
+                            <li><a class="dropdown-item" href="{% url 'projects:project_mapping_add' %}">添加项目映射</a></li>
                             {% endif %}
-                            <li><a class="dropdown-item" href="{% url 'visual:project_mapping_list' %}">项目映射列表</a></li>
+                            <li><a class="dropdown-item" href="{% url 'projects:project_mapping_list' %}">项目映射列表</a></li>
                         </ul>
                     </li>
 
@@ -75,7 +75,7 @@
                             <li><a class="dropdown-item" href="{% url 'users:profile' %}">个人资料</a></li>
                             <!-- 只有管理员才能看到仪表盘链接 -->
                             {% if user.is_admin or user.is_staff %}
-                            <li><a class="dropdown-item" href="{% url 'visual:dashboard' %}">仪表盘</a></li>
+                            <li><a class="dropdown-item" href="{% url 'projects:dashboard' %}">仪表盘</a></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'users:logout' %}">退出</a></li>

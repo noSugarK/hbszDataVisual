@@ -1,4 +1,4 @@
-<!-- apps/visual/templates/project_mapping_edit.html -->
+<!-- apps/projects/templates/project_mapping_add.html -->
 {% extends 'base.html' %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -16,7 +16,7 @@
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="project_name" class="form-label">项目名称 *</label>
-                            <input type="text" class="form-control" id="project_name" name="project_name" value="{{ mapping.project_name }}" required>
+                            <input type="text" class="form-control" id="project_name" name="project_name" required>
                         </div>
 
                         <div class="mb-3">
@@ -24,14 +24,14 @@
                             <select class="form-select" id="region" name="region" required>
                                 <option value="">请选择地区</option>
                                 {% for region in regions %}
-                                    <option value="{{ region.id }}" {% if mapping.region.id == region.id %}selected{% endif %}>{{ region }}</option>
+                                    <option value="{{ region.id }}">{{ region }}</option>
                                 {% endfor %}
                             </select>
                         </div>
 
                         <div class="mb-3">
-                            <button type="submit" class="btn btn-primary">更新项目映射</button>
-                            <a href="{% url 'visual:project_mapping_detail' mapping.id %}" class="btn btn-secondary">取消</a>
+                            <button type="submit" class="btn btn-primary">添加项目映射</button>
+                            <a href="{% url 'projects:project_mapping_list' %}" class="btn btn-secondary">返回列表</a>
                         </div>
                     </form>
                 </div>

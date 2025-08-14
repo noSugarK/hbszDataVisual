@@ -16,15 +16,15 @@
 
                 {% if user.is_authenticated %}
                     <div class="mt-4">
-                        <a class="btn btn-primary btn-lg me-2" href="{% url 'visual:project_add' %}" role="button">
+                        <a class="btn btn-primary btn-lg me-2" href="{% url 'projects:project_add' %}" role="button">
                             <i class="fas fa-plus"></i> 添加项目数据
                         </a>
-                        <a class="btn btn-outline-primary btn-lg" href="{% url 'visual:project_list' %}" role="button">
+                        <a class="btn btn-outline-primary btn-lg" href="{% url 'projects:project_list' %}" role="button">
                             <i class="fas fa-list"></i> 查看项目列表
                         </a>
                         <!-- 只有管理员才能看到仪表盘链接 -->
                         {% if user.is_admin or user.is_staff %}
-                        <a class="btn btn-info btn-lg ms-2" href="{% url 'visual:dashboard' %}" role="button">
+                        <a class="btn btn-info btn-lg ms-2" href="{% url 'projects:dashboard' %}" role="button">
                             <i class="fas fa-tachometer-alt"></i> 仪表盘
                         </a>
                         {% endif %}

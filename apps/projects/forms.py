@@ -1,11 +1,11 @@
-# apps/visual/forms.py
+# apps/projects/forms.py
 from django import forms
 from .models import Project, ProjectMapping, MaterialCategory, Specification, Brand
 from ..common.models import Region, Supplier
 from ..users.models import User
 
 
-# apps/visual/forms.py
+# apps/projects/forms.py
 from django import forms
 from .models import Project, ProjectMapping, MaterialCategory, Specification, Brand
 from ..common.models import Region, Supplier

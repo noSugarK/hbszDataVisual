@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     # 本地应用
     'apps.users',
     'apps.common',
-    'apps.visual',
+    'apps.projects',
 ]
 
 MIDDLEWARE = [

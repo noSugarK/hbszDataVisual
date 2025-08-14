@@ -1,4 +1,4 @@
-# apps/visual/models.py
+# apps/projects/models.py
 from django.db import models
 from ..common.models import Region, Supplier, Brand
 from ..users.models import User

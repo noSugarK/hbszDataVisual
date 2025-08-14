@@ -1,4 +1,4 @@
-# apps/visual/views.py
+# apps/projects/views.py
 from functools import wraps
 
 from django.contrib import messages
@@ -54,7 +54,7 @@ def debug_regions(request):
     return HttpResponse(html)
 
 
-# apps/visual/views.py
+# apps/projects/views.py
 @login_required
 def project_add(request):
     if request.method == 'POST':
@@ -289,7 +289,7 @@ def brand_add(request):
                     description=description
                 )
                 messages.success(request, '品牌添加成功！')
-                return redirect('visual:brand_list')
+                return redirect('projects:brand_list')
         else:
             messages.error(request, '请填写品牌名称！')
 
@@ -322,7 +322,7 @@ def brand_edit(request, brand_id):
                 brand.description = description
                 brand.save()
                 messages.success(request, '品牌更新成功！')
-                return redirect('visual:brand_list')
+                return redirect('projects:brand_list')
         else:
             messages.error(request, '请填写品牌名称！')
 
@@ -347,12 +347,12 @@ def brand_delete(request, brand_id):
         # 检查是否有项目关联到这个品牌
         if Project.objects.filter(brand=brand).exists():
             messages.error(request, '无法删除该品牌，因为还有项目使用它。')
-            return redirect('visual:brand_list')
+            return redirect('projects:brand_list')
 
         brand_name = brand.brand_name
         brand.delete()
         messages.success(request, f'品牌 "{brand_name}" 删除成功！')
-        return redirect('visual:brand_list')
+        return redirect('projects:brand_list')
 
     context = {
         'brand': brand,

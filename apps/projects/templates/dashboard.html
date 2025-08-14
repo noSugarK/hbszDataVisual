@@ -1,4 +1,4 @@
-<!-- apps/visual/templates/dashboard.html -->
+<!-- apps/projects/templates/dashboard.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -239,22 +239,22 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-12 mb-3">
-                            <a href="{% url 'visual:project_add' %}" class="btn btn-primary btn-block">
+                            <a href="{% url 'projects:project_add' %}" class="btn btn-primary btn-block">
                                 <i class="fas fa-plus-circle"></i> 添加项目
                             </a>
                         </div>
                         <div class="col-12 mb-3">
-                            <a href="{% url 'visual:project_list' %}" class="btn btn-outline-primary btn-block">
+                            <a href="{% url 'projects:project_list' %}" class="btn btn-outline-primary btn-block">
                                 <i class="fas fa-list"></i> 项目列表
                             </a>
                         </div>
                         <div class="col-12 mb-3">
-                            <a href="{% url 'visual:project_mapping_add' %}" class="btn btn-info btn-block">
+                            <a href="{% url 'projects:project_mapping_add' %}" class="btn btn-info btn-block">
                                 <i class="fas fa-project-diagram"></i> 添加项目映射
                             </a>
                         </div>
                         <div class="col-12">
-                            <a href="{% url 'visual:project_mapping_list' %}" class="btn btn-outline-info btn-block">
+                            <a href="{% url 'projects:project_mapping_list' %}" class="btn btn-outline-info btn-block">
                                 <i class="fas fa-th-list"></i> 项目映射列表
                             </a>
                         </div>

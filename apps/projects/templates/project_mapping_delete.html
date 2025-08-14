@@ -1,4 +1,4 @@
-<!-- apps/visual/templates/project_mapping_delete.html -->
+<!-- apps/projects/templates/project_mapping_delete.html -->
 {% extends 'base.html' %}
 
 {% block title %}{{ title }}{% endblock %}
@@ -41,7 +41,7 @@
                         <p><i class="fas fa-exclamation-circle"></i> 无法删除该项目映射，因为还有 {{ mapping.project_set.count }} 个项目关联到它。</p>
                         <p>请先删除所有关联的项目，然后再删除此项目映射。</p>
                     </div>
-                    <a href="{% url 'visual:project_mapping_detail' mapping.id %}" class="btn btn-secondary">
+                    <a href="{% url 'projects:project_mapping_detail' mapping.id %}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> 返回详情
                     </a>
                     {% else %}
@@ -50,7 +50,7 @@
                         <button type="submit" class="btn btn-danger">
                             <i class="fas fa-trash"></i> 确认删除
                         </button>
-                        <a href="{% url 'visual:project_mapping_detail' mapping.id %}" class="btn btn-secondary">
+                        <a href="{% url 'projects:project_mapping_detail' mapping.id %}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> 取消
                         </a>
                     </form>
