@@ -44,19 +44,26 @@
                                     <td>
                                         {% if data.districts %}
                                             {% for district in data.districts %}
-                                                <span class="badge badge-secondary">{{ district.district }}</span>
+                                                {% cycle '#ffebee' '#e8f5e8' '#e3f2fd' '#fff3e0' '#f3e5f5' '#e0f2f1' '#fce4ec' '#fff8e1' '#efebe9' '#f1f8e9' as bgColor silent %}
+                                                <span style="background-color: {{ bgColor }}; color: #212529; font-size: 0.9rem; margin-right: 5px; margin-bottom: 5px;" class="badge">
+                                                    {{ district.district }}
+                                                </span>
                                             {% endfor %}
                                         {% else %}
                                             <span class="text-muted">无区县</span>
                                         {% endif %}
                                     </td>
                                     <td>
+                                        {% if data.city_obj %}
                                         <a href="{% url 'projects:region_edit' data.city_obj.id %}" class="btn btn-sm btn-warning">
                                             <i class="fas fa-edit"></i> 编辑
                                         </a>
                                         <a href="{% url 'projects:region_delete' data.city_obj.id %}" class="btn btn-sm btn-danger">
                                             <i class="fas fa-trash"></i> 删除
                                         </a>
+                                        {% else %}
+                                        <span class="text-muted">无法操作</span>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% empty %}

@@ -393,24 +393,40 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 
-# apps/projects/views.py 中添加以下视图
-
+# apps/projects/views.py
 @login_required
 @admin_required
 def region_list(request):
     """地区列表"""
-    regions = Region.objects.all()
-    # 按城市分组显示区县
-    cities = Region.objects.filter(district='').order_by('city')
+    # 获取所有唯一城市
+    city_names = Region.objects.values_list('city', flat=True).distinct().order_by('city')
 
     city_districts = {}
-    for city in cities:
-        districts = Region.objects.filter(city=city.city).exclude(district='').order_by('district')
-        city_districts[city.city] = {
-            'city_obj': city,
+    for city_name in city_names:
+        # 获取该城市的所有区县
+        districts = Region.objects.filter(city=city_name).exclude(
+            district=''
+        ).exclude(
+            district__isnull=True
+        ).order_by('district')
+
+        # 获取城市记录（用于编辑/删除操作）
+        # 优先尝试获取district为空的记录，如果没有则使用该城市的第一条记录
+        try:
+            city_obj = Region.objects.get(city=city_name, district='')
+        except Region.DoesNotExist:
+            try:
+                city_obj = Region.objects.get(city=city_name, district__isnull=True)
+            except Region.DoesNotExist:
+                # 如果找不到纯粹的城市记录，则使用该城市的第一条记录作为城市记录
+                city_obj = Region.objects.filter(city=city_name).first()
+
+        city_districts[city_name] = {
+            'city_obj': city_obj,
             'districts': districts
         }
 
+    # print("City districts data:", city_districts)
     context = {
         'city_districts': city_districts,
         'title': '地区管理'
@@ -418,13 +434,13 @@ def region_list(request):
     return render(request, 'region_list.html', context)
 
 
-@login_required
 @admin_required
+@login_required
 def region_add(request):
     """添加地区"""
     if request.method == 'POST':
-        city = request.POST.get('city')
-        district = request.POST.get('district', '')
+        city = request.POST.get('city').strip()  # 去除首尾空格
+        district = request.POST.get('district', '').strip()  # 去除首尾空格
 
         if city:
             if district:
@@ -450,6 +466,7 @@ def region_add(request):
         'title': '添加地区'
     }
     return render(request, 'region_add.html', context)
+
 
 
 @login_required
