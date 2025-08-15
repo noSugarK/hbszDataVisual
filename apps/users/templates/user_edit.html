@@ -1,0 +1,102 @@
+<!-- templates/user_edit.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- 基本信息 -->
+                        <fieldset class="border p-3 mb-4">
+                            <legend class="w-auto px-2">基本信息</legend>
+
+                            <div class="form-group">
+                                <label for="username">用户名</label>
+                                <input type="text" class="form-control" id="username" name="username" value="{{ edit_user.username }}" readonly>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email">邮箱</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ edit_user.email }}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="phone">手机号</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" value="{{ edit_user.phone|default:"" }}" placeholder="请输入手机号">
+                            </div>
+                        </fieldset>
+
+                        <!-- 权限设置（仅超级管理员可见） -->
+                        {% if request.user.is_superuser and not edit_user.is_superuser %}
+                        <fieldset class="border p-3 mb-4">
+                            <legend class="w-auto px-2">权限设置</legend>
+
+                            <div class="form-group">
+                                <label for="permission">用户权限</label>
+                                <select name="permission" id="permission" class="form-control">
+                                    <option value="normal" {% if current_permission == 'normal' %}selected{% endif %}>普通用户</option>
+                                    <option value="admin" {% if current_permission == 'admin' %}selected{% endif %}>管理员</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    普通用户只能查看数据，管理员可以管理数据和用户。
+                                </small>
+                            </div>
+                        </fieldset>
+                        {% endif %}
+
+                        <!-- 密码修改 -->
+                        <fieldset class="border p-3 mb-4">
+                            <legend class="w-auto px-2">密码修改</legend>
+
+                            <div class="alert alert-info">
+                                <small>注意：如需修改密码，请填写以下信息。不填写则保持原密码不变。</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="current_password">当前密码</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password" placeholder="请输入当前密码">
+                                <small class="form-text text-muted">修改密码时需要验证当前密码</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="new_password">新密码</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password" placeholder="请输入新密码">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirm_password">确认新密码</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="请再次输入新密码">
+                            </div>
+                        </fieldset>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">保存修改</button>
+                            <a href="{% url 'users:user_list' %}" class="btn btn-secondary">取消</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

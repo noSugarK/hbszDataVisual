@@ -15,7 +15,7 @@
                         <a class="nav-link" href="{% url 'common:home' %}">首页</a>
                     </li>
                     <!-- 只有管理员才能看到仪表盘链接 -->
-                    {% if user.is_authenticated and user.is_admin or user.is_staff %}
+                    {% if user.is_superuser or user.permission == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'projects:dashboard' %}">仪表盘</a>
                     </li>
@@ -25,14 +25,11 @@
                             项目管理
                         </a>
                         <ul class="dropdown-menu">
-                            <!-- 只有管理员才能添加项目 -->
-                            {% if user.is_admin or user.is_staff %}
                             <li><a class="dropdown-item" href="{% url 'projects:project_add' %}">添加项目</a></li>
-                            {% endif %}
                             <li><a class="dropdown-item" href="{% url 'projects:project_list' %}">项目列表</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <!-- 只有管理员才能管理项目映射 -->
-                            {% if user.is_admin or user.is_staff %}
+                            {% if user.is_superuser or user.permission == 'admin' %}
                             <li><a class="dropdown-item" href="{% url 'projects:project_mapping_add' %}">添加项目映射</a></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="{% url 'projects:project_mapping_list' %}">项目映射列表</a></li>
@@ -45,7 +42,7 @@
                             信息价管理
                         </a>
                         <ul class="dropdown-menu">
-                            {% if user.is_admin or user.is_staff %}
+                            {% if user.is_superuser or user.permission == 'admin' %}
                             <li><a class="dropdown-item" href="{% url 'price:price_add' %}">添加信息价</a></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="{% url 'price:price_list' %}">信息价列表</a></li>
@@ -54,7 +51,7 @@
                     </li>
 
                     <!-- 只有管理员才能看到基础数据管理 -->
-                    {% if user.is_authenticated and user.is_admin or user.is_staff %}
+                    {% if user.is_superuser or user.permission == 'admin' %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             基础数据
@@ -70,7 +67,7 @@
                     </li>
                     {% endif %}
 
-                    {% if user.is_authenticated and user.is_admin or user.is_staff %}
+                    {% if user.is_superuser or user.permission == 'admin' %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             用户管理
@@ -92,7 +89,7 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{% url 'users:profile' %}">个人资料</a></li>
                             <!-- 只有管理员才能看到仪表盘链接 -->
-                            {% if user.is_admin or user.is_staff %}
+                            {% if user.is_superuser or user.permission == 'admin' %}
                             <li><a class="dropdown-item" href="{% url 'projects:dashboard' %}">仪表盘</a></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
