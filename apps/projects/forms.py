@@ -1,15 +1,8 @@
 # apps/projects/forms.py
 from django import forms
 from .models import Project, ProjectMapping, MaterialCategory, Specification, Brand
-from ..common.models import Region, Supplier
-from ..users.models import User
-
-
-# apps/projects/forms.py
-from django import forms
-from .models import Project, ProjectMapping, MaterialCategory, Specification, Brand
-from ..common.models import Region, Supplier
-from ..users.models import User
+from ..region.models import Region
+from ..supplier.models import Supplier
 
 
 class ProjectForm(forms.ModelForm):

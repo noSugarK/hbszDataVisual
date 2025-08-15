@@ -23,7 +23,18 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("apps.common.urls")),
     path("user/", include("apps.users.urls")),
+    # 项目
     path("projects/", include("apps.projects.urls")),
+    # 品牌
+    path("brand/", include("apps.brand.urls")),
+    # 物资类别
+    path('category/', include("apps.category.urls")),
+    # 地区
+    path('region/', include("apps.region.urls")),
+    # 规格
+    path('specification/', include("apps.specification.urls")),
+    # 供应商
+    path('supplier/', include("apps.supplier.urls"))
 ]
 
 if settings.DEBUG:

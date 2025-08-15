@@ -5,13 +5,14 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.db.models import Sum, Avg
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from .models import Project, ProjectMapping, Specification, MaterialCategory, Brand
-from ..common.models import Region, ConcretePrice, Supplier
+from ..common.models import ConcretePrice
+from ..region.models import Region
+from ..supplier.models import Supplier
 from ..users.models import User
-from .forms import ProjectForm, ProjectMappingForm
+from .forms import ProjectForm
 
 def admin_required(view_func):
     """
@@ -67,7 +68,7 @@ def project_add(request):
             print("准备保存项目:", project)  # 调试信息
             project.save()
             messages.success(request, '项目数据保存成功！')
-            return redirect('visual:project_list')
+            return redirect('projects:project_list')
         else:
             print("表单错误:", form.errors)  # 调试信息
             messages.error(request, '表单数据有误，请检查后重新提交。')
@@ -123,7 +124,7 @@ def project_detail(request, project_id):
     # 检查权限：管理员可以查看所有项目，普通用户只能查看自己的项目
     if not request.user.is_admin and not request.user.is_staff and project.user != request.user:
         messages.error(request, '您没有权限查看此项目。')
-        return redirect('visual:project_list')
+        return redirect('projects:project_list')
 
     context = {
         'project': project,
@@ -140,7 +141,7 @@ def project_edit(request, project_id):
     # 检查权限：管理员可以编辑所有项目，普通用户只能编辑自己的项目
     if not request.user.is_admin and not request.user.is_staff and project.user != request.user:
         messages.error(request, '您没有权限编辑此项目。')
-        return redirect('visual:project_list')
+        return redirect('projects:project_list')
 
     if request.method == 'POST':
         form = ProjectForm(request.POST, instance=project)
@@ -150,7 +151,7 @@ def project_edit(request, project_id):
             project.user = project.user  # 保持原有用户
             project.save()
             messages.success(request, '项目信息更新成功！')
-            return redirect('visual:project_detail', project_id=project.id)
+            return redirect('projects:project_detail', project_id=project.id)
         else:
             messages.error(request, '表单数据有误，请检查后重新提交。')
     else:
@@ -183,13 +184,13 @@ def project_delete(request, project_id):
     # 检查权限：管理员可以删除所有项目，普通用户只能删除自己的项目
     if not request.user.is_admin and not request.user.is_staff and project.user != request.user:
         messages.error(request, '您没有权限删除此项目。')
-        return redirect('visual:project_list')
+        return redirect('projects:project_list')
 
     if request.method == 'POST':
         project_name = project.project_mapping.project_name if project.project_mapping else '未知项目'
         project.delete()
         messages.success(request, f'项目 "{project_name}" 删除成功！')
-        return redirect('visual:project_list')
+        return redirect('projects:project_list')
 
     context = {
         'project': project,
@@ -215,7 +216,7 @@ def project_mapping_add(request):
                     region=region
                 )
                 messages.success(request, '项目映射添加成功！')
-                return redirect('visual:project_mapping_list')
+                return redirect('projects:project_mapping_list')
             except Region.DoesNotExist:
                 messages.error(request, '选择的地区不存在！')
         else:
@@ -246,120 +247,6 @@ def project_mapping_list(request):
         'title': '项目映射列表'
     }
     return render(request, 'project_mapping_list.html', context)
-
-
-@login_required
-def brand_list(request):
-    """品牌列表"""
-    # 检查权限：只有管理员可以查看品牌列表
-    if not request.user.is_admin and not request.user.is_staff:
-        messages.error(request, '您没有权限访问此页面。')
-        return redirect('common:home')
-
-    brands_list = Brand.objects.all()
-    paginator = Paginator(brands_list, 20)
-    page_number = request.GET.get('page')
-    brands = paginator.get_page(page_number)
-
-    context = {
-        'brands': brands,
-        'title': '品牌列表'
-    }
-    return render(request, 'brand_list.html', context)
-
-
-@login_required
-def brand_add(request):
-    """添加品牌"""
-    # 检查权限：只有管理员可以添加品牌
-    if not request.user.is_admin and not request.user.is_staff:
-        messages.error(request, '您没有权限执行此操作。')
-        return redirect('common:home')
-
-    if request.method == 'POST':
-        brand_name = request.POST.get('brand_name')
-        description = request.POST.get('description', '')
-
-        if brand_name:
-            if Brand.objects.filter(brand_name=brand_name).exists():
-                messages.error(request, '品牌名称已存在！')
-            else:
-                Brand.objects.create(
-                    brand_name=brand_name,
-                    description=description
-                )
-                messages.success(request, '品牌添加成功！')
-                return redirect('projects:brand_list')
-        else:
-            messages.error(request, '请填写品牌名称！')
-
-    context = {
-        'title': '添加品牌'
-    }
-    return render(request, 'brand_add.html', context)
-
-
-@login_required
-def brand_edit(request, brand_id):
-    """编辑品牌"""
-    # 检查权限：只有管理员可以编辑品牌
-    if not request.user.is_admin and not request.user.is_staff:
-        messages.error(request, '您没有权限执行此操作。')
-        return redirect('common:home')
-
-    brand = get_object_or_404(Brand, id=brand_id)
-
-    if request.method == 'POST':
-        brand_name = request.POST.get('brand_name')
-        description = request.POST.get('description', '')
-
-        if brand_name:
-            # 检查品牌名称是否已存在（排除当前品牌）
-            if Brand.objects.filter(brand_name=brand_name).exclude(id=brand_id).exists():
-                messages.error(request, '品牌名称已存在！')
-            else:
-                brand.brand_name = brand_name
-                brand.description = description
-                brand.save()
-                messages.success(request, '品牌更新成功！')
-                return redirect('projects:brand_list')
-        else:
-            messages.error(request, '请填写品牌名称！')
-
-    context = {
-        'brand': brand,
-        'title': '编辑品牌'
-    }
-    return render(request, 'brand_edit.html', context)
-
-
-@login_required
-def brand_delete(request, brand_id):
-    """删除品牌"""
-    # 检查权限：只有管理员可以删除品牌
-    if not request.user.is_admin and not request.user.is_staff:
-        messages.error(request, '您没有权限执行此操作。')
-        return redirect('common:home')
-
-    brand = get_object_or_404(Brand, id=brand_id)
-
-    if request.method == 'POST':
-        # 检查是否有项目关联到这个品牌
-        if Project.objects.filter(brand=brand).exists():
-            messages.error(request, '无法删除该品牌，因为还有项目使用它。')
-            return redirect('projects:brand_list')
-
-        brand_name = brand.brand_name
-        brand.delete()
-        messages.success(request, f'品牌 "{brand_name}" 删除成功！')
-        return redirect('projects:brand_list')
-
-    context = {
-        'brand': brand,
-        'title': '删除品牌'
-    }
-    return render(request, 'brand_delete.html', context)
-
 
 @admin_required
 @login_required
@@ -393,347 +280,6 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 
-# apps/projects/views.py
-@login_required
-@admin_required
-def region_list(request):
-    """地区列表"""
-    # 获取所有唯一城市
-    city_names = Region.objects.values_list('city', flat=True).distinct().order_by('city')
-
-    city_districts = {}
-    for city_name in city_names:
-        # 获取该城市的所有区县
-        districts = Region.objects.filter(city=city_name).exclude(
-            district=''
-        ).exclude(
-            district__isnull=True
-        ).order_by('district')
-
-        # 获取城市记录（用于编辑/删除操作）
-        # 优先尝试获取district为空的记录，如果没有则使用该城市的第一条记录
-        try:
-            city_obj = Region.objects.get(city=city_name, district='')
-        except Region.DoesNotExist:
-            try:
-                city_obj = Region.objects.get(city=city_name, district__isnull=True)
-            except Region.DoesNotExist:
-                # 如果找不到纯粹的城市记录，则使用该城市的第一条记录作为城市记录
-                city_obj = Region.objects.filter(city=city_name).first()
-
-        city_districts[city_name] = {
-            'city_obj': city_obj,
-            'districts': districts
-        }
-
-    # print("City districts data:", city_districts)
-    context = {
-        'city_districts': city_districts,
-        'title': '地区管理'
-    }
-    return render(request, 'region_list.html', context)
-
-
-@admin_required
-@login_required
-def region_add(request):
-    """添加地区"""
-    if request.method == 'POST':
-        city = request.POST.get('city').strip()  # 去除首尾空格
-        district = request.POST.get('district', '').strip()  # 去除首尾空格
-
-        if city:
-            if district:
-                # 添加区县
-                if Region.objects.filter(city=city, district=district).exists():
-                    messages.error(request, '该区县已存在！')
-                else:
-                    Region.objects.create(city=city, district=district)
-                    messages.success(request, '区县添加成功！')
-                    return redirect('projects:region_list')
-            else:
-                # 添加城市
-                if Region.objects.filter(city=city, district='').exists():
-                    messages.error(request, '该城市已存在！')
-                else:
-                    Region.objects.create(city=city, district='')
-                    messages.success(request, '城市添加成功！')
-                    return redirect('projects:region_list')
-        else:
-            messages.error(request, '请填写城市名称！')
-
-    context = {
-        'title': '添加地区'
-    }
-    return render(request, 'region_add.html', context)
-
-
-
-@login_required
-@admin_required
-def region_edit(request, region_id):
-    """编辑地区"""
-    region = get_object_or_404(Region, id=region_id)
-
-    if request.method == 'POST':
-        city = request.POST.get('city')
-        district = request.POST.get('district', '')
-
-        if city:
-            # 检查是否重复
-            if district:
-                if Region.objects.filter(city=city, district=district).exclude(id=region_id).exists():
-                    messages.error(request, '该区县已存在！')
-                else:
-                    region.city = city
-                    region.district = district
-                    region.save()
-                    messages.success(request, '区县更新成功！')
-                    return redirect('projects:region_list')
-            else:
-                if Region.objects.filter(city=city, district='').exclude(id=region_id).exists():
-                    messages.error(request, '该城市已存在！')
-                else:
-                    region.city = city
-                    region.district = district
-                    region.save()
-                    messages.success(request, '城市更新成功！')
-                    return redirect('projects:region_list')
-        else:
-            messages.error(request, '请填写城市名称！')
-
-    context = {
-        'region': region,
-        'title': '编辑地区'
-    }
-    return render(request, 'region_edit.html', context)
-
-
-@login_required
-@admin_required
-def region_delete(request, region_id):
-    """删除地区"""
-    region = get_object_or_404(Region, id=region_id)
-
-    if request.method == 'POST':
-        # 检查是否有项目映射关联到这个地区
-        if ProjectMapping.objects.filter(region=region).exists():
-            messages.error(request, '无法删除该地区，因为还有项目映射使用它。')
-            return redirect('projects:region_list')
-
-        region_name = str(region)
-        region.delete()
-        messages.success(request, f'地区 "{region_name}" 删除成功！')
-        return redirect('projects:region_list')
-
-    context = {
-        'region': region,
-        'title': '删除地区'
-    }
-    return render(request, 'region_delete.html', context)
-
-
-@login_required
-@admin_required
-def category_list(request):
-    """物资类别列表"""
-    categories = MaterialCategory.objects.all()
-
-    context = {
-        'categories': categories,
-        'title': '物资类别管理'
-    }
-    return render(request, 'category_list.html', context)
-
-
-@login_required
-@admin_required
-def category_add(request):
-    """添加物资类别"""
-    if request.method == 'POST':
-        category_name = request.POST.get('category_name')
-
-        if category_name:
-            if MaterialCategory.objects.filter(category_name=category_name).exists():
-                messages.error(request, '物资类别名称已存在！')
-            else:
-                MaterialCategory.objects.create(category_name=category_name)
-                messages.success(request, '物资类别添加成功！')
-                return redirect('projects:category_list')
-        else:
-            messages.error(request, '请填写物资类别名称！')
-
-    context = {
-        'title': '添加物资类别'
-    }
-    return render(request, 'category_add.html', context)
-
-
-@login_required
-@admin_required
-def category_edit(request, category_id):
-    """编辑物资类别"""
-    category = get_object_or_404(MaterialCategory, id=category_id)
-
-    if request.method == 'POST':
-        category_name = request.POST.get('category_name')
-
-        if category_name:
-            # 检查是否重复（排除当前类别）
-            if MaterialCategory.objects.filter(category_name=category_name).exclude(id=category_id).exists():
-                messages.error(request, '物资类别名称已存在！')
-            else:
-                category.category_name = category_name
-                category.save()
-                messages.success(request, '物资类别更新成功！')
-                return redirect('projects:category_list')
-        else:
-            messages.error(request, '请填写物资类别名称！')
-
-    context = {
-        'category': category,
-        'title': '编辑物资类别'
-    }
-    return render(request, 'category_edit.html', context)
-
-
-@login_required
-@admin_required
-def category_delete(request, category_id):
-    """删除物资类别"""
-    category = get_object_or_404(MaterialCategory, id=category_id)
-
-    if request.method == 'POST':
-        # 检查是否有规格或项目关联到这个类别
-        if Specification.objects.filter(category=category).exists():
-            messages.error(request, '无法删除该物资类别，因为还有规格使用它。')
-            return redirect('projects:category_list')
-
-        if Project.objects.filter(category=category).exists():
-            messages.error(request, '无法删除该物资类别，因为还有项目使用它。')
-            return redirect('projects:category_list')
-
-        category_name = category.category_name
-        category.delete()
-        messages.success(request, f'物资类别 "{category_name}" 删除成功！')
-        return redirect('projects:category_list')
-
-    context = {
-        'category': category,
-        'title': '删除物资类别'
-    }
-    return render(request, 'category_delete.html', context)
-
-
-@login_required
-@admin_required
-def specification_list(request):
-    """规格列表"""
-    specifications = Specification.objects.select_related('category').all()
-
-    context = {
-        'specifications': specifications,
-        'title': '规格管理'
-    }
-    return render(request, 'specification_list.html', context)
-
-
-@login_required
-@admin_required
-def specification_add(request):
-    """添加规格"""
-    if request.method == 'POST':
-        category_id = request.POST.get('category')
-        specification_name = request.POST.get('specification_name')
-
-        if category_id and specification_name:
-            try:
-                category = MaterialCategory.objects.get(id=category_id)
-                # 检查同一类别下规格名称是否重复
-                if Specification.objects.filter(category=category, specification_name=specification_name).exists():
-                    messages.error(request, '该类别下已存在同名规格！')
-                else:
-                    Specification.objects.create(
-                        category=category,
-                        specification_name=specification_name
-                    )
-                    messages.success(request, '规格添加成功！')
-                    return redirect('projects:specification_list')
-            except MaterialCategory.DoesNotExist:
-                messages.error(request, '选择的物资类别不存在！')
-        else:
-            messages.error(request, '请填写所有必填字段！')
-
-    categories = MaterialCategory.objects.all()
-    context = {
-        'categories': categories,
-        'title': '添加规格'
-    }
-    return render(request, 'specification_add.html', context)
-
-
-@login_required
-@admin_required
-def specification_edit(request, spec_id):
-    """编辑规格"""
-    specification = get_object_or_404(Specification, id=spec_id)
-
-    if request.method == 'POST':
-        category_id = request.POST.get('category')
-        specification_name = request.POST.get('specification_name')
-
-        if category_id and specification_name:
-            try:
-                category = MaterialCategory.objects.get(id=category_id)
-                # 检查同一类别下规格名称是否重复（排除当前规格）
-                if Specification.objects.filter(
-                        category=category,
-                        specification_name=specification_name
-                ).exclude(id=spec_id).exists():
-                    messages.error(request, '该类别下已存在同名规格！')
-                else:
-                    specification.category = category
-                    specification.specification_name = specification_name
-                    specification.save()
-                    messages.success(request, '规格更新成功！')
-                    return redirect('projects:specification_list')
-            except MaterialCategory.DoesNotExist:
-                messages.error(request, '选择的物资类别不存在！')
-        else:
-            messages.error(request, '请填写所有必填字段！')
-
-    categories = MaterialCategory.objects.all()
-    context = {
-        'specification': specification,
-        'categories': categories,
-        'title': '编辑规格'
-    }
-    return render(request, 'specification_edit.html', context)
-
-
-@login_required
-@admin_required
-def specification_delete(request, spec_id):
-    """删除规格"""
-    specification = get_object_or_404(Specification, id=spec_id)
-
-    if request.method == 'POST':
-        # 检查是否有项目关联到这个规格
-        if Project.objects.filter(specification=specification).exists():
-            messages.error(request, '无法删除该规格，因为还有项目使用它。')
-            return redirect('projects:specification_list')
-
-        spec_name = str(specification)
-        specification.delete()
-        messages.success(request, f'规格 "{spec_name}" 删除成功！')
-        return redirect('projects:specification_list')
-
-    context = {
-        'specification': specification,
-        'title': '删除规格'
-    }
-    return render(request, 'specification_delete.html', context)
-
 
 @login_required
 def project_mapping_detail(request, mapping_id):
@@ -743,7 +289,7 @@ def project_mapping_detail(request, mapping_id):
     # 检查权限：只有管理员可以查看项目映射详情
     if not request.user.is_admin and not request.user.is_staff:
         messages.error(request, '您没有权限查看项目映射详情。')
-        return redirect('visual:project_mapping_list')
+        return redirect('projects:project_mapping_list')
 
     context = {
         'mapping': mapping,
@@ -760,7 +306,7 @@ def project_mapping_edit(request, mapping_id):
     # 检查权限：只有管理员可以编辑项目映射
     if not request.user.is_admin and not request.user.is_staff:
         messages.error(request, '您没有权限编辑项目映射。')
-        return redirect('visual:project_mapping_list')
+        return redirect('projects:project_mapping_list')
 
     if request.method == 'POST':
         project_name = request.POST.get('project_name')
@@ -773,7 +319,7 @@ def project_mapping_edit(request, mapping_id):
                 mapping.region = region
                 mapping.save()
                 messages.success(request, '项目映射更新成功！')
-                return redirect('visual:project_mapping_detail', mapping_id=mapping.id)
+                return redirect('projects:project_mapping_detail', mapping_id=mapping.id)
             except Region.DoesNotExist:
                 messages.error(request, '选择的地区不存在！')
         else:
@@ -797,18 +343,18 @@ def project_mapping_delete(request, mapping_id):
     # 检查权限：只有管理员可以删除项目映射
     if not request.user.is_admin and not request.user.is_staff:
         messages.error(request, '您没有权限删除项目映射。')
-        return redirect('visual:project_mapping_list')
+        return redirect('projects:project_mapping_list')
 
     if request.method == 'POST':
         # 检查是否有项目关联到这个映射
         if mapping.project_set.exists():
             messages.error(request, '无法删除该项目映射，因为还有项目关联到它。请先删除相关项目。')
-            return redirect('visual:project_mapping_detail', mapping_id=mapping.id)
+            return redirect('projects:project_mapping_detail', mapping_id=mapping.id)
 
         mapping_name = mapping.project_name
         mapping.delete()
         messages.success(request, f'项目映射 "{mapping_name}" 删除成功！')
-        return redirect('visual:project_mapping_list')
+        return redirect('projects:project_mapping_list')
 
     context = {
         'mapping': mapping,

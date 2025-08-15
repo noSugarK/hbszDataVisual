@@ -1,0 +1,51 @@
+<!-- templates/specification_edit.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="category">物资类别 *</label>
+                            <select class="form-control" id="category" name="category" required>
+                                <option value="">请选择物资类别</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}" {% if category.id == specification.category.id %}selected{% endif %}>
+                                        {{ category.category_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="specification_name">规格名称 *</label>
+                            <input type="text" class="form-control" id="specification_name" name="specification_name" value="{{ specification.specification_name }}" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">更新</button>
+                        <a href="{% url 'specification:specification_list' %}" class="btn btn-secondary">取消</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

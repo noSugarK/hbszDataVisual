@@ -1,39 +1,12 @@
 # apps/projects/models.py
 from django.db import models
-from ..common.models import Region, Supplier, Brand
+
+from ..brand.models import Brand
+from ..category.models import MaterialCategory
+from ..region.models import Region
+from ..specification.models import Specification
+from ..supplier.models import Supplier
 from ..users.models import User
-
-class MaterialCategory(models.Model):
-    """
-    物资类别表
-    """
-    id = models.AutoField(primary_key=True)
-    category_name = models.CharField('类别名称', max_length=100, unique=True)
-
-    class Meta:
-        db_table = 'MATERIAL_CATEGORY'
-        verbose_name = '物资类别'
-        verbose_name_plural = '物资类别'
-
-    def __str__(self):
-        return self.category_name
-
-class Specification(models.Model):
-    """
-    规格表，与物资类别关联
-    """
-    id = models.AutoField(primary_key=True)
-    category = models.ForeignKey(MaterialCategory, on_delete=models.CASCADE, verbose_name='物资类别')
-    specification_name = models.CharField('规格名称', max_length=200)
-
-    class Meta:
-        db_table = 'SPECIFICATION'
-        verbose_name = '规格'
-        verbose_name_plural = '规格'
-        unique_together = ('category', 'specification_name')  # 同一类别下规格名称唯一
-
-    def __str__(self):
-        return f"{self.category.category_name} - {self.specification_name}"
 
 class ProjectMapping(models.Model):
     """

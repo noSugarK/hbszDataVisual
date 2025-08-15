@@ -39,69 +39,26 @@ hbszDataVisual/                          # 项目根目录
 │   │   ├── forms.py                    # 表单定义
 │   │   └── tests.py                    # 单元测试
 │   ├── projects/                       # 项目数据管理应用
-│   │   ├── migrations/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── models.py
-│   │   ├── views.py
-│   │   ├── urls.py
-│   │   ├── forms.py
-│   │   └── tests.py
+│   ├── brand/                          # 品牌管理应用
+│   ├── category/                       # 物资类别管理应用
+│   ├── region/                         # 地区管理应用
+│   ├── specification/                  # 规格管理应用
+│   ├── supplier/                       # 供应商管理应用
 │   ├── visual/                         # 数据可视化应用
-│   │   ├── migrations/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── models.py
-│   │   ├── views.py
-│   │   ├── urls.py
-│   │   ├── forms.py
-│   │   └── tests.py
 │   ├── data_processing/                # 数据处理应用
-│   │   ├── migrations/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── models.py
-│   │   ├── views.py
-│   │   ├── urls.py
-│   │   ├── forms.py
-│   │   └── tests.py
 │   ├── data_prediction/                # 数据预测应用
-│   │   ├── migrations/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── models.py
-│   │   ├── views.py
-│   │   ├── urls.py
-│   │   ├── forms.py
-│   │   └── tests.py
-│   └── common/                         # 公共功能应用
-│       ├── migrations/
-│       ├── __init__.py
-│       ├── admin.py
-│       ├── apps.py
-│       ├── models.py
-│       ├── views.py
-│       ├── urls.py
-│       ├── forms.py
-│       └── tests.py
+│   └── common/                         # 公共模块
 ├── static/                             # 静态文件目录
+│   ├── bootstrap/                      # bootstrap
+│   ├── fontawesome/                    # fontawesome
 │   ├── css/                            # CSS样式文件
 │   ├── js/                             # JavaScript脚本文件
 │   ├── images/                         # 图片资源文件
 │   └── vendor/                         # 第三方库文件
 ├── templates/                          # 模板文件目录
 │   ├── base.html                       # 基础模板
-│   ├── home.html                       # 首页模板
-│   ├── about.html                      # 关于页面模板
-│   ├── help.html                       # 帮助页面模板
-│   ├── users/                          # 用户模块模板
-│   ├── projects/                       # 项目模块模板
-│   ├── visualization/                  # 可视化模块模板
-│   └── common/                         # 公共模板
+│   ├── header.html                     # 导航栏模板
+│   └── footer.html                     # 页脚模板
 ├── media/                              # 媒体文件目录（用户上传文件）
 │   └── uploads/                        # 上传文件存储目录
 └── tests/                              # 测试文件目录

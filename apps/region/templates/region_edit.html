@@ -1,0 +1,45 @@
+<!-- templates/region_edit.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="city">城市名称 *</label>
+                            <input type="text" class="form-control" id="city" name="city" value="{{ region.city }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="district">区县名称</label>
+                            <input type="text" class="form-control" id="district" name="district" value="{{ region.district }}">
+                            <small class="form-text text-muted">如果编辑的是城市，请留空此项</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">更新</button>
+                        <a href="{% url 'region:region_list' %}" class="btn btn-secondary">取消</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

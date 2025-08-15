@@ -4,34 +4,6 @@ from pypinyin import lazy_pinyin
 from apps.users.models import User
 
 
-class Region(models.Model):
-    """
-    地区表
-    """
-    id = models.AutoField(primary_key=True)
-    city = models.CharField('市', max_length=50)
-    district = models.CharField('区/县', max_length=50, blank=True)
-    citypy = models.CharField('市拼音', max_length=50, blank=True, null=True)
-
-    class Meta:
-        db_table = 'REGION'
-        verbose_name = '地区'
-        verbose_name_plural = '地区'
-        unique_together = ('city', 'district')
-
-    def save(self, *args, **kwargs):
-        # 自动生成城市拼音
-        if not self.citypy and self.city:
-            pinyin_list = lazy_pinyin(self.city)
-            self.citypy = ''.join(pinyin_list).lower()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        if self.district:
-            return f"{self.city}-{self.district}"
-        return self.city
-
-
 class ConcretePrice(models.Model):
     """
     混凝土信息价表
@@ -65,36 +37,3 @@ class ConcretePrice(models.Model):
 
     def __str__(self):
         return f"混凝土信息价 - {self.date}"
-
-# 在 models.py 中添加 Supplier 模型，在其他模型定义之后
-class Supplier(models.Model):
-    """
-    供应商表
-    """
-    id = models.AutoField(primary_key=True)
-    supplier_name = models.CharField('供应商名称', max_length=200, unique=True)
-
-    class Meta:
-        db_table = 'SUPPLIER'
-        verbose_name = '供应商'
-        verbose_name_plural = '供应商'
-
-    def __str__(self):
-        return self.supplier_name
-
-class Brand(models.Model):
-    """
-    品牌表
-    """
-    id = models.AutoField(primary_key=True)
-    brand_name = models.CharField('品牌名称', max_length=100, unique=True)
-    description = models.TextField('品牌描述', blank=True, null=True)
-
-    class Meta:
-        db_table = 'BRAND'
-        verbose_name = '品牌'
-        verbose_name_plural = '品牌'
-
-    def __str__(self):
-        return self.brand_name
-

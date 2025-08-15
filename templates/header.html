@@ -46,12 +46,12 @@
                             基础数据
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'common:supplier_list' %}">供应商管理</a></li>
-                            <li><a class="dropdown-item" href="{% url 'common:brand_list' %}">品牌管理</a></li>
+                            <li><a class="dropdown-item" href="{% url 'supplier:supplier_list' %}">供应商管理</a></li>
+                            <li><a class="dropdown-item" href="{% url 'brand:brand_list' %}">品牌管理</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'projects:region_list' %}">地区管理</a></li>
-                            <li><a class="dropdown-item" href="{% url 'projects:category_list' %}">物资类别管理</a></li>
-                            <li><a class="dropdown-item" href="{% url 'projects:specification_list' %}">规格管理</a></li>
+                            <li><a class="dropdown-item" href="{% url 'region:region_list' %}">地区管理</a></li>
+                            <li><a class="dropdown-item" href="{% url 'category:category_list' %}">物资类别管理</a></li>
+                            <li><a class="dropdown-item" href="{% url 'specification:specification_list' %}">规格管理</a></li>
                         </ul>
                     </li>
                     {% endif %}

@@ -1,0 +1,82 @@
+<!-- templates/region_list.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'region:region_add' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> 添加地区
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>城市</th>
+                                    <th>区县</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for city_name, data in city_districts.items %}
+                                <tr>
+                                    <td>{{ city_name }}</td>
+                                    <td>
+                                        {% if data.districts %}
+                                            {% for district in data.districts %}
+                                                {% cycle '#ffebee' '#e8f5e8' '#e3f2fd' '#fff3e0' '#f3e5f5' '#e0f2f1' '#fce4ec' '#fff8e1' '#efebe9' '#f1f8e9' as bgColor silent %}
+                                                <span style="background-color: {{ bgColor }}; color: #212529; font-size: 0.9rem; margin-right: 5px; margin-bottom: 5px;" class="badge">
+                                                    {{ district.district }}
+                                                </span>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">无区县</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if data.city_obj %}
+                                        <a href="{% url 'region:region_edit' data.city_obj.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i> 编辑
+                                        </a>
+                                        <a href="{% url 'region:region_delete' data.city_obj.id %}" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> 删除
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted">无法操作</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">暂无地区数据</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
