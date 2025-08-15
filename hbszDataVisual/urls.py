@@ -22,9 +22,13 @@ from django.conf.urls.static import static
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("apps.common.urls")),
+    # 可视化
+    path("visual/", include("apps.visual.urls")),
     path("user/", include("apps.users.urls")),
     # 项目
     path("projects/", include("apps.projects.urls")),
+    # 价格
+    path('price/', include("apps.price.urls")),
     # 品牌
     path("brand/", include("apps.brand.urls")),
     # 物资类别

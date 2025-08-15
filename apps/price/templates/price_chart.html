@@ -1,0 +1,285 @@
+<!-- templates/price_chart.html -->
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'chart.js-4.5.0/dist/chart.umd.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="chartForm">
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5>选择城市</h5>
+                                <div class="city-checkboxes">
+                                    {% for region in regions %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox"
+                                               name="cities"
+                                               value="{{ region.citypy }}"
+                                               id="city_{{ region.citypy }}"
+                                               {% if region.citypy in selected_cities %}checked{% endif %}>
+                                        <label class="form-check-label" for="city_{{ region.citypy }}">
+                                            {{ region.city }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5>时间范围</h5>
+                                <div class="btn-group" role="group">
+                                    <input type="radio" class="btn-check" name="time_range" id="time_3m"
+                                           value="3m" autocomplete="off"
+                                           {% if time_range == '3m' or not time_range %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary" for="time_3m">最近三个月</label>
+
+                                    <input type="radio" class="btn-check" name="time_range" id="time_1y"
+                                           value="1y" autocomplete="off"
+                                           {% if time_range == '1y' %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary" for="time_1y">最近一年</label>
+
+                                    <input type="radio" class="btn-check" name="time_range" id="time_2y"
+                                           value="2y" autocomplete="off"
+                                           {% if time_range == '2y' %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary" for="time_2y">最近两年</label>
+
+                                    <input type="radio" class="btn-check" name="time_range" id="time_all"
+                                           value="all" autocomplete="off"
+                                           {% if time_range == 'all' %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary" for="time_all">全部时间</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-chart-line"></i> 生成图表
+                                </button>
+                                <a href="{% url 'price:price_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-list"></i> 信息价列表
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+
+                    {% if selected_cities %}
+                        <div class="chart-container" style="position: relative; height:60vh; width:100%">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <h4><i class="icon fas fa-info"></i> 提示</h4>
+                            <p>请选择至少一个城市查看其历史信息价变化图表。</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if selected_cities %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查Chart.js是否已加载
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js未正确加载');
+        document.querySelector('.chart-container').innerHTML =
+            '<div class="alert alert-danger">图表库加载失败，请刷新页面重试</div>';
+        return;
+    }
+
+    // 显示加载提示
+    const chartContainer = document.querySelector('.chart-container');
+    chartContainer.innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;"><div class="spinner-border" role="status"><span class="sr-only">加载中...</span></div></div>';
+
+    // 获取选中的城市
+    const cityCheckboxes = document.querySelectorAll('input[name="cities"]:checked');
+    const selectedCities = Array.from(cityCheckboxes).map(cb => cb.value);
+
+    if (selectedCities.length === 0) {
+        chartContainer.innerHTML = '<div class="alert alert-warning"><h4><i class="icon fas fa-exclamation-triangle"></i> 提示</h4><p>请选择至少一个城市</p></div>';
+        return;
+    }
+
+    // 获取选中的时间范围
+    const timeRangeRadio = document.querySelector('input[name="time_range"]:checked');
+    const timeRange = timeRangeRadio ? timeRangeRadio.value : '3m';
+
+    // 获取图表数据
+    fetch("{% url 'price:price_chart_data' %}?cities=" + encodeURIComponent(selectedCities.join(',')) + "&time_range=" + encodeURIComponent(timeRange))
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('网络响应错误: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                chartContainer.innerHTML = '<div class="alert alert-warning"><h4><i class="icon fas fa-exclamation-triangle"></i> 错误</h4><p>' + data.error + '</p></div>';
+                return;
+            }
+
+            // 恢复图表容器
+            chartContainer.innerHTML = '<canvas id="priceChart"></canvas>';
+
+            const ctx = document.getElementById('priceChart').getContext('2d');
+
+            // 定义颜色数组
+            const colors = [
+                'rgb(255, 99, 132)',    // 红色
+                'rgb(54, 162, 235)',    // 蓝色
+                'rgb(255, 205, 86)',    // 黄色
+                'rgb(75, 192, 192)',    // 青色
+                'rgb(153, 102, 255)',   // 紫色
+                'rgb(255, 159, 64)',    // 橙色
+                'rgb(199, 199, 199)',   // 灰色
+                'rgb(83, 102, 147)',    // 蓝灰色
+                'rgb(255, 99, 255)',    // 粉色
+                'rgb(99, 255, 99)',     // 绿色
+                'rgb(99, 99, 255)',     // 深蓝色
+                'rgb(255, 99, 99)',     // 浅红色
+                'rgb(99, 255, 255)',    // 天蓝色
+                'rgb(255, 255, 99)',    // 浅黄色
+                'rgb(147, 112, 219)',   // 紫罗兰色
+                'rgb(255, 182, 193)',   // 浅粉色
+                'rgb(60, 179, 113)'     // 海绿色
+            ];
+
+            // 为每个数据集分配颜色
+            data.datasets.forEach((dataset, index) => {
+                const colorIndex = index % colors.length;
+                dataset.borderColor = colors[colorIndex];
+                dataset.backgroundColor = colors[colorIndex].replace('rgb', 'rgba').replace(')', ', 0.2)');
+                dataset.tension = 0.1;
+                dataset.fill = false;
+            });
+
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: '价格 (元)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日期'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching chart data:', error);
+            chartContainer.innerHTML = '<div class="alert alert-danger"><h4><i class="icon fas fa-exclamation-triangle"></i> 错误</h4><p>获取图表数据失败: ' + error.message + '</p><button class="btn btn-primary" onclick="location.reload()">重新加载</button></div>';
+        });
+});
+
+// 表单提交事件处理
+document.getElementById('chartForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    // 获取选中的城市
+    const cityCheckboxes = document.querySelectorAll('input[name="cities"]:checked');
+    const selectedCities = Array.from(cityCheckboxes).map(cb => cb.value);
+
+    if (selectedCities.length === 0) {
+        alert('请至少选择一个城市');
+        return;
+    }
+
+    // 获取选中的时间范围
+    const timeRangeRadio = document.querySelector('input[name="time_range"]:checked');
+    const timeRange = timeRangeRadio ? timeRangeRadio.value : '3m';
+
+    // 构建URL参数
+    const params = new URLSearchParams();
+    params.append('cities', selectedCities.join(','));
+    params.append('time_range', timeRange);
+
+    // 重新加载页面
+    window.location.search = params.toString();
+});
+</script>
+
+<style>
+.city-checkboxes {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+.city-checkboxes .form-check {
+    margin-right: 15px;
+    margin-bottom: 8px;
+    min-width: 120px;
+}
+
+.city-checkboxes .form-check-inline {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 15px;
+    margin-bottom: 8px;
+}
+
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+.btn-check:checked + .btn-outline-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+</style>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,276 @@
+<!-- templates/price_confirm.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ title }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h4><i class="icon fas fa-exclamation-triangle"></i> 日期已存在</h4>
+                        <p>{{ date }} 的信息价记录已存在。请查看现有数据和新输入数据的对比：</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="date" value="{{ date }}">
+                        <input type="hidden" name="action" value="confirm">
+
+                        <!-- 传递表单数据 -->
+                        {% for field, value in form_data.items %}
+                            {% if value %}
+                                <input type="hidden" name="{{ field }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>现有数据</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>城市</th>
+                                                    <th>现有价格</th>
+                                                    <th>新价格</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>武汉市</td>
+                                                    <td>{{ existing_price.wuhan|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.wuhan %}
+                                                            <span class="text-success">{{ form_data.wuhan }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>黄石市</td>
+                                                    <td>{{ existing_price.huangshi|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.huangshi %}
+                                                            <span class="text-success">{{ form_data.huangshi }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>十堰市</td>
+                                                    <td>{{ existing_price.shiyan|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.shiyan %}
+                                                            <span class="text-success">{{ form_data.shiyan }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>宜昌市</td>
+                                                    <td>{{ existing_price.yichang|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.yichang %}
+                                                            <span class="text-success">{{ form_data.yichang }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>襄阳市</td>
+                                                    <td>{{ existing_price.xiangyang|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.xiangyang %}
+                                                            <span class="text-success">{{ form_data.xiangyang }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>鄂州市</td>
+                                                    <td>{{ existing_price.ezhou|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.ezhou %}
+                                                            <span class="text-success">{{ form_data.ezhou }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>荆门市</td>
+                                                    <td>{{ existing_price.jingmen|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.jingmen %}
+                                                            <span class="text-success">{{ form_data.jingmen }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>孝感市</td>
+                                                    <td>{{ existing_price.xiaogan|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.xiaogan %}
+                                                            <span class="text-success">{{ form_data.xiaogan }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>荆州市</td>
+                                                    <td>{{ existing_price.jingzhou|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.jingzhou %}
+                                                            <span class="text-success">{{ form_data.jingzhou }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>黄冈市</td>
+                                                    <td>{{ existing_price.huanggang|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.huanggang %}
+                                                            <span class="text-success">{{ form_data.huanggang }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>咸宁市</td>
+                                                    <td>{{ existing_price.xianning|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.xianning %}
+                                                            <span class="text-success">{{ form_data.xianning }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>随州市</td>
+                                                    <td>{{ existing_price.suizhou|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.suizhou %}
+                                                            <span class="text-success">{{ form_data.suizhou }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>恩施市</td>
+                                                    <td>{{ existing_price.enshi|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.enshi %}
+                                                            <span class="text-success">{{ form_data.enshi }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>仙桃市</td>
+                                                    <td>{{ existing_price.xiantao|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.xiantao %}
+                                                            <span class="text-success">{{ form_data.xiantao }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>潜江市</td>
+                                                    <td>{{ existing_price.qianjiang|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.qianjiang %}
+                                                            <span class="text-success">{{ form_data.qianjiang }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>天门市</td>
+                                                    <td>{{ existing_price.tianmen|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.tianmen %}
+                                                            <span class="text-success">{{ form_data.tianmen }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>神农架</td>
+                                                    <td>{{ existing_price.shennongjia|default:"-" }}</td>
+                                                    <td>
+                                                        {% if form_data.shennongjia %}
+                                                            <span class="text-success">{{ form_data.shennongjia }}</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>操作选择</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p>您可以选择以下操作：</p>
+                                        <ol>
+                                            <li><strong>覆盖更新</strong>：用新数据完全覆盖现有记录（空值也会覆盖现有值）</li>
+                                            <li><strong>返回修改</strong>：返回添加页面修改数据</li>
+                                            <li><strong>取消</strong>：放弃本次操作</li>
+                                        </ol>
+
+                                        <div class="mt-4">
+                                            <button type="submit" class="btn btn-warning"
+                                                    onclick="return confirm('确定要覆盖更新 {{ date }} 的信息价吗？\n注意：空值也会覆盖现有数据！')">
+                                                <i class="fas fa-sync-alt"></i> 覆盖更新
+                                            </button>
+                                            <a href="{% url 'price:price_add' %}" class="btn btn-primary">
+                                                <i class="fas fa-edit"></i> 返回修改
+                                            </a>
+                                            <a href="{% url 'price:price_list' %}" class="btn btn-secondary">
+                                                <i class="fas fa-times"></i> 取消
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

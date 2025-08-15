@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from .models import Project, ProjectMapping, Specification, MaterialCategory, Brand
-from ..common.models import ConcretePrice
+from ..price.models import ConcretePrice
 from ..region.models import Region
 from ..supplier.models import Supplier
 from ..users.models import User

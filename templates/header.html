@@ -39,6 +39,20 @@
                         </ul>
                     </li>
 
+                    <!-- 信息价管理 -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            信息价管理
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if user.is_admin or user.is_staff %}
+                            <li><a class="dropdown-item" href="{% url 'price:price_add' %}">添加信息价</a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="{% url 'price:price_list' %}">信息价列表</a></li>
+                            <li><a class="dropdown-item" href="{% url 'price:price_chart' %}">信息价图表</a></li>
+                        </ul>
+                    </li>
+
                     <!-- 只有管理员才能看到基础数据管理 -->
                     {% if user.is_authenticated and user.is_admin or user.is_staff %}
                     <li class="nav-item dropdown">
