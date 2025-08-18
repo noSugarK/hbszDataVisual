@@ -24,8 +24,8 @@
                             项目管理
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'projects:project_add' %}">添加项目</a></li>
-                            <li><a class="dropdown-item" href="{% url 'projects:project_list' %}">项目列表</a></li>
+                            <li><a class="dropdown-item" href="{% url 'projects:project_add' %}">添加项目数据</a></li>
+                            <li><a class="dropdown-item" href="{% url 'projects:project_list' %}">项目数据列表</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <!-- 只有管理员才能管理项目映射 -->
                             {% if user.is_superuser or user.permission == 'admin' %}

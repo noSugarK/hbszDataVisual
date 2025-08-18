@@ -20,7 +20,7 @@
                             <i class="fas fa-plus"></i> 添加项目数据
                         </a>
                         <a class="btn btn-outline-primary btn-lg" href="{% url 'projects:project_list' %}" role="button">
-                            <i class="fas fa-list"></i> 查看项目列表
+                            <i class="fas fa-list"></i> 查看数据列表
                         </a>
                         <!-- 仪表盘链接 -->
                         <a class="btn btn-info btn-lg ms-2" href="{% url 'projects:dashboard' %}" role="button">
@@ -86,7 +86,7 @@
                         <div class="col-md-3">
                             <div class="stat-card bg-primary text-white p-3 rounded">
                                 <h3>{{ projects_count|default:0 }}</h3>
-                                <p class="mb-0">项目总数</p>
+                                <p class="mb-0">项目数据</p>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -104,7 +104,7 @@
                         <div class="col-md-3">
                             <div class="stat-card bg-warning text-white p-3 rounded">
                                 <h3>{{ project_mappings_count|default:0 }}</h3>
-                                <p class="mb-0">项目映射</p>
+                                <p class="mb-0">项目数量</p>
                             </div>
                         </div>
                     </div>
