@@ -35,36 +35,25 @@
                         </ul>
                     </li>
 
-                    <!-- 信息价管理 -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            信息价管理
-                        </a>
-                        <ul class="dropdown-menu">
-                            {% if user.is_superuser or user.permission == 'admin' %}
-                            <li><a class="dropdown-item" href="{% url 'price:price_add' %}">添加信息价</a></li>
-                            {% endif %}
-                            <li><a class="dropdown-item" href="{% url 'price:price_list' %}">信息价列表</a></li>
-                            <li><a class="dropdown-item" href="{% url 'price:price_chart' %}">信息价图表</a></li>
-                        </ul>
-                    </li>
-
-                    <!-- 只有管理员才能看到基础数据管理 -->
-                    {% if user.is_superuser or user.permission == 'admin' %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             基础数据
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'supplier:supplier_list' %}">供应商管理</a></li>
-                            <li><a class="dropdown-item" href="{% url 'brand:brand_list' %}">品牌管理</a></li>
+                            <!-- 只有管理员才能看到数据管理 -->
+                            {% if user.is_superuser or user.permission == 'admin' %}
+                            <li><a class="dropdown-item" href="{% url 'supplier:supplier_list' %}">供应商</a></li>
+                            <li><a class="dropdown-item" href="{% url 'brand:brand_list' %}">品牌</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'region:region_list' %}">地区管理</a></li>
-                            <li><a class="dropdown-item" href="{% url 'category:category_list' %}">物资类别管理</a></li>
-                            <li><a class="dropdown-item" href="{% url 'specification:specification_list' %}">规格管理</a></li>
+                            <li><a class="dropdown-item" href="{% url 'region:region_list' %}">地区</a></li>
+                            <li><a class="dropdown-item" href="{% url 'category:category_list' %}">物资类别</a></li>
+                            <li><a class="dropdown-item" href="{% url 'specification:specification_list' %}">规格</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="{% url 'price:price_list' %}">信息价</a></li>
+                            <li><a class="dropdown-item" href="{% url 'price:price_chart' %}">信息价图表</a></li>
                         </ul>
                     </li>
-                    {% endif %}
 
                     {% if user.is_superuser or user.permission == 'admin' %}
                     <li class="nav-item dropdown">
