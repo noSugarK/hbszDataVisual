@@ -13,6 +13,7 @@ urlpatterns = [
     path('<int:project_id>/edit/', views.project_edit, name='project_edit'),
     path('<int:project_id>/delete/', views.project_delete, name='project_delete'),
     path('mapping/add/', views.project_mapping_add, name='project_mapping_add'),
+    path('mapping/excel/', views.project_mapping_excel, name='project_mapping_excel'),
     path('mapping/list/', views.project_mapping_list, name='project_mapping_list'),
     path('mapping/<int:mapping_id>/', views.project_mapping_detail, name='project_mapping_detail'),
     path('mapping/<int:mapping_id>/edit/', views.project_mapping_edit, name='project_mapping_edit'),

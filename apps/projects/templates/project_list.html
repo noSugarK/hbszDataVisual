@@ -30,8 +30,8 @@
                                 <th>下浮率(%)</th>
                                 <th>合计金额</th>
                                 <th>品牌</th>
-                                <th>填报用户</th>
                                 <th>地区</th>
+                                <th>填报用户</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -90,17 +90,17 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if project.user %}
-                                        {{ project.user.username }}
-                                    {% else %}
-                                        未知用户
-                                    {% endif %}
-                                </td>
-                                <td>
                                     {% if project.project_mapping and project.project_mapping.region %}
                                         {{ project.project_mapping.region }}
                                     {% else %}
                                         未指定
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if project.user %}
+                                        {{ project.user.username }}
+                                    {% else %}
+                                        未知用户
                                     {% endif %}
                                 </td>
                                 <td>

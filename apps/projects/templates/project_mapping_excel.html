@@ -1,0 +1,115 @@
+<!-- apps/projects/templates/project_mapping_excel.html -->
+{% extends 'base.html' %}
+
+{% block title %}Excel导入项目映射{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Excel导入项目映射</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        {% if not preview_mode %}
+                        <div class="form-group">
+                            <label for="{{ form.excel_file.id_for_label }}">{{ form.excel_file.label }}</label>
+                            {{ form.excel_file }}
+                            {% if form.excel_file.help_text %}
+                                <small class="form-text text-muted">{{ form.excel_file.help_text }}</small>
+                            {% endif %}
+                            {% if form.excel_file.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.excel_file.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" name="preview" class="btn btn-info">预览工作表</button>
+                        {% else %}
+                        <!-- 隐藏的文件输入字段 -->
+                        {{ form.excel_file.as_hidden }}
+
+                        <div class="form-group">
+                            <label for="{{ form.sheet_name.id_for_label }}">{{ form.sheet_name.label }}</label>
+                            {{ form.sheet_name }}
+                            {% if form.sheet_name.help_text %}
+                                <small class="form-text text-muted">{{ form.sheet_name.help_text }}</small>
+                            {% endif %}
+                            {% if form.sheet_name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.sheet_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            {% if sheet_names %}
+                            <div class="mt-2">
+                                <small class="text-muted">可用的工作表:</small>
+                                <ul>
+                                    {% for name in sheet_names %}
+                                    <li>{{ name }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">导入数据</button>
+                        <a href="{% url 'projects:project_mapping_excel' %}" class="btn btn-secondary" style="margin-left: 10px;">重新选择文件</a>
+                        {% endif %}
+
+                        <a href="{% url 'projects:project_mapping_list' %}" class="btn btn-secondary" style="margin-left: 10px;">返回列表</a>
+                    </form>
+
+                    <div class="mt-4">
+                        <h5>Excel文件格式要求：</h5>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>项目名称</th>
+                                    <th>地区（区/县）</th>
+                                    <th>地区（市）</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>项目1</td>
+                                    <td>江岸区</td>
+                                    <td>武汉市</td>
+                                </tr>
+                                <tr>
+                                    <td>项目2</td>
+                                    <td></td>
+                                    <td>黄冈市</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p><strong>注意事项：</strong></p>
+                        <ul>
+                            <li>确保列标题与上述示例完全一致</li>
+                            <li>地区（区/县）可以为空，表示使用市级地区</li>
+                            <li>地区（市）不能为空，必须填写有效的市级地区</li>
+                            <li>系统只会从已有地区中选择，不会新增地区</li>
+                            <li>如果区县找不到但市级地区存在，会使用市级地区并给出提示</li>
+                            <li>如果市级地区也找不到，会报错提示地区有问题</li>
+                            {% if preview_mode %}
+                                <li>请选择要导入的工作表，默认使用第一个工作表</li>
+                            {% else %}
+                                <li>请先上传Excel文件并点击"预览工作表"查看所有可用工作表</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

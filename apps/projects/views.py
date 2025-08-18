@@ -16,7 +16,7 @@ from ..price.models import ConcretePrice
 from ..region.models import Region
 from ..supplier.models import Supplier
 from ..users.models import User
-from .forms import ProjectForm, ExcelUploadForm
+from .forms import ProjectForm, ExcelUploadForm, ProjectMappingExcelUploadForm
 
 
 def admin_required(view_func):
@@ -311,6 +311,191 @@ def project_excel(request):
         form = ExcelUploadForm()
 
     return render(request, 'project_excel.html', {'form': form, 'preview_mode': False})
+
+
+
+@login_required
+def project_mapping_excel(request):
+    """
+    上传Excel文件并导入项目映射数据（支持地区（市）和地区（区/县））
+    """
+    # 预览模式 - 显示工作表选项
+    if request.method == 'POST' and 'preview' in request.POST:
+        excel_file = request.FILES.get('excel_file')
+        if excel_file:
+            try:
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+                    for chunk in excel_file.chunks():
+                        tmp.write(chunk)
+                    tmp_path = tmp.name
+
+                try:
+                    if excel_file.name.endswith('.xlsx'):
+                        engine = 'openpyxl'
+                    elif excel_file.name.endswith('.xls'):
+                        engine = 'xlrd'
+                    else:
+                        engine = None
+
+                    excel_file_obj = pd.ExcelFile(tmp_path, engine=engine)
+                    sheet_names = excel_file_obj.sheet_names
+
+                    sheet_choices = [('', '使用第一个工作表（默认）')] + [(name, name) for name in sheet_names]
+                    form = ProjectMappingExcelUploadForm(sheet_choices=sheet_choices)
+                    form.fields['excel_file'].initial = excel_file
+
+                    request.session['mapping_excel_tmp_path'] = tmp_path
+                    request.session['mapping_excel_filename'] = excel_file.name
+
+                    return render(request, 'project_mapping_excel.html', {
+                        'form': form,
+                        'sheet_names': sheet_names,
+                        'preview_mode': True
+                    })
+
+                finally:
+                    pass
+
+            except Exception as e:
+                messages.error(request, f'读取Excel文件时发生错误: {str(e)}')
+                if 'tmp_path' in locals():
+                    os.unlink(tmp_path)
+                form = ProjectMappingExcelUploadForm()
+        else:
+            form = ProjectMappingExcelUploadForm()
+
+    # 导入模式 - 实际导入数据
+    elif request.method == 'POST':
+        form = ProjectMappingExcelUploadForm(request.POST, request.FILES)
+        sheet_name = request.POST.get('sheet_name', '')
+
+        tmp_path = request.session.get('mapping_excel_tmp_path')
+        excel_filename = request.session.get('mapping_excel_filename')
+
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                data_upload = DataUpload.objects.create(
+                    user=request.user,
+                    file_path=excel_filename or 'unknown.xlsx',
+                    status='processing'
+                )
+
+                try:
+                    excel_file_name = excel_filename or 'unknown.xlsx'
+                    if excel_file_name.endswith('.xlsx'):
+                        engine = 'openpyxl'
+                    elif excel_file_name.endswith('.xls'):
+                        engine = 'xlrd'
+                    else:
+                        engine = None
+
+                    df = pd.read_excel(tmp_path, sheet_name=sheet_name, engine=engine)
+
+                    # 验证必要列
+                    required_columns = ['项目名称', '地区（区/县）', '地区（市）']
+                    missing_columns = [col for col in required_columns if col not in df.columns]
+                    if missing_columns:
+                        messages.error(request, f'Excel文件缺少必要的列: {", ".join(missing_columns)}')
+                        data_upload.status = 'failed'
+                        data_upload.save()
+                        del request.session['mapping_excel_tmp_path']
+                        del request.session['mapping_excel_filename']
+                        return redirect('projects:project_mapping_excel')
+
+                    success_count = 0
+                    error_messages = []
+
+                    with transaction.atomic():
+                        for index, row in df.iterrows():
+                            try:
+                                # 验证必要字段不为空
+                                if pd.isna(row['项目名称']):
+                                    raise ValueError("项目名称不能为空")
+
+                                project_name = str(row['项目名称']).strip()
+
+                                # 处理地区信息
+                                district = row['地区（区/县）']
+                                city = row['地区（市）']
+
+                                # 处理非正常地区数据
+                                if pd.isna(district) or district in ['/', '', None]:
+                                    district = ''
+                                else:
+                                    district = str(district).strip()
+
+                                if pd.isna(city) or city in ['/', '', None]:
+                                    raise ValueError("地区（市）不能为空")
+                                else:
+                                    city = str(city).strip()
+
+                                # 查找地区，不允许新增地区
+                                try:
+                                    if district:
+                                        # 优先查找区县
+                                        region = Region.objects.get(city=city, district=district)
+                                    else:
+                                        # 查找市级地区
+                                        region = Region.objects.get(city=city, district='')
+                                except Region.DoesNotExist:
+                                    if district:
+                                        # 如果区县找不到，尝试查找市级地区
+                                        try:
+                                            region = Region.objects.get(city=city, district='')
+                                            # 区县找不到，但市级存在，可以继续但需要提示
+                                            messages.warning(request,
+                                                             f'第{index + 2}行：区县"{district}"未找到，使用市级地区"{city}"')
+                                        except Region.DoesNotExist:
+                                            raise ValueError(f'地区"{city}"不存在')
+                                    else:
+                                        raise ValueError(f'地区"{city}"不存在')
+
+                                # 创建或更新项目映射
+                                project_mapping, created = ProjectMapping.objects.get_or_create(
+                                    project_name=project_name,
+                                    defaults={'region': region}
+                                )
+                                if not created and project_mapping.region != region:
+                                    project_mapping.region = region
+                                    project_mapping.save()
+
+                                success_count += 1
+
+                            except Exception as e:
+                                error_messages.append(f"第{index + 2}行数据导入失败: {str(e)}")
+
+                    if error_messages:
+                        for error in error_messages:
+                            messages.warning(request, error)
+
+                    messages.success(request, f'成功导入 {success_count} 条项目映射数据')
+                    data_upload.status = 'completed'
+                    data_upload.save()
+
+                finally:
+                    os.unlink(tmp_path)
+                    del request.session['mapping_excel_tmp_path']
+                    del request.session['mapping_excel_filename']
+
+            except Exception as e:
+                messages.error(request, f'导入过程中发生错误: {str(e)}')
+                if 'data_upload' in locals():
+                    data_upload.status = 'failed'
+                    data_upload.save()
+                if 'tmp_path' in locals():
+                    os.unlink(tmp_path)
+                del request.session['mapping_excel_tmp_path']
+                del request.session['mapping_excel_filename']
+
+            return redirect('projects:project_mapping_list')
+        else:
+            messages.error(request, '文件信息丢失，请重新上传文件')
+            form = ProjectMappingExcelUploadForm()
+
+    else:
+        form = ProjectMappingExcelUploadForm()
+
+    return render(request, 'project_mapping_excel.html', {'form': form, 'preview_mode': False})
 
 
 # apps/projects/views.py
