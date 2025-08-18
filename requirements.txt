@@ -1,1 +1,9 @@
 pymysql
+pytz
+xlrd
+six
+numpy
+et-xmlfile
+python-dateutil
+openpyxl
+pandas

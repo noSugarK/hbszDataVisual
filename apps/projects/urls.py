@@ -7,6 +7,7 @@ app_name = 'projects'
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path('add/', views.project_add, name='project_add'),
+    path('excel/', views.project_excel, name='project_excel'),
     path('list/', views.project_list, name='project_list'),
     path('<int:project_id>/', views.project_detail, name='project_detail'),
     path('<int:project_id>/edit/', views.project_edit, name='project_edit'),

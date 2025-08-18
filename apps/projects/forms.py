@@ -51,7 +51,24 @@ class ProjectForm(forms.ModelForm):
             )
 
 
+class ExcelUploadForm(forms.Form):
+    excel_file = forms.FileField(
+        label='选择Excel文件',
+        help_text='请选择包含项目数据的Excel文件',
+        widget=forms.FileInput(attrs={'class': 'form-control'})
+    )
+    sheet_name = forms.ChoiceField(
+        label='选择工作表',
+        choices=[('', '---------')],  # 默认选项
+        required=False,
+        help_text='请选择要导入的工作表（留空则使用第一个工作表）',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
 
+    def __init__(self, *args, **kwargs):
+        sheet_choices = kwargs.pop('sheet_choices', [('', '使用第一个工作表（默认）')])
+        super().__init__(*args, **kwargs)
+        self.fields['sheet_name'].choices = sheet_choices
 
 class ProjectMappingForm(forms.ModelForm):
     """

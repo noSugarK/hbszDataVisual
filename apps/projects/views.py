@@ -1,18 +1,23 @@
 # apps/projects/views.py
+import os
+import tempfile
 from functools import wraps
+import pandas as pd
 
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
-from .models import Project, ProjectMapping, Specification, MaterialCategory, Brand
+from .models import Project, ProjectMapping, Specification, MaterialCategory, Brand, DataUpload
 from ..price.models import ConcretePrice
 from ..region.models import Region
 from ..supplier.models import Supplier
 from ..users.models import User
-from .forms import ProjectForm
+from .forms import ProjectForm, ExcelUploadForm
+
 
 def admin_required(view_func):
     """
@@ -53,6 +58,259 @@ def debug_regions(request):
     html += "</ul>"
 
     return HttpResponse(html)
+
+
+@login_required
+def project_excel(request):
+    """
+    上传Excel文件并导入项目数据
+    """
+    # 预览模式 - 显示工作表选项
+    if request.method == 'POST' and 'preview' in request.POST:
+        excel_file = request.FILES.get('excel_file')
+        if excel_file:
+            try:
+                # 创建临时文件来存储上传的Excel文件
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
+                    for chunk in excel_file.chunks():
+                        tmp.write(chunk)
+                    tmp_path = tmp.name
+
+                try:
+                    # 获取工作表列表
+                    if excel_file.name.endswith('.xlsx'):
+                        engine = 'openpyxl'
+                    elif excel_file.name.endswith('.xls'):
+                        engine = 'xlrd'
+                    else:
+                        engine = None
+
+                    # 读取Excel文件中的所有工作表名称
+                    excel_file_obj = pd.ExcelFile(tmp_path, engine=engine)
+                    sheet_names = excel_file_obj.sheet_names
+
+                    # 创建表单并传递工作表选项，默认选择第一个工作表
+                    sheet_choices = [('', '使用第一个工作表（默认）')] + [(name, name) for name in sheet_names]
+                    form = ExcelUploadForm(sheet_choices=sheet_choices)
+                    form.fields['excel_file'].initial = excel_file
+
+                    # 保存临时文件路径到会话中
+                    request.session['excel_tmp_path'] = tmp_path
+                    request.session['excel_filename'] = excel_file.name
+
+                    return render(request, 'project_excel.html', {
+                        'form': form,
+                        'sheet_names': sheet_names,
+                        'preview_mode': True
+                    })
+
+                finally:
+                    # 保持临时文件以供后续使用
+                    pass
+
+            except Exception as e:
+                messages.error(request, f'读取Excel文件时发生错误: {str(e)}')
+                # 清理临时文件
+                if 'tmp_path' in locals():
+                    os.unlink(tmp_path)
+                form = ExcelUploadForm()
+        else:
+            form = ExcelUploadForm()
+
+    # 导入模式 - 实际导入数据
+    elif request.method == 'POST':
+        form = ExcelUploadForm(request.POST, request.FILES)
+        sheet_name = request.POST.get('sheet_name', '')
+
+        # 检查是否从会话中获取临时文件
+        tmp_path = request.session.get('excel_tmp_path')
+        excel_filename = request.session.get('excel_filename')
+
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                # 保存上传记录
+                data_upload = DataUpload.objects.create(
+                    user=request.user,
+                    file_path=excel_filename or 'unknown.xlsx',
+                    status='processing'
+                )
+
+                try:
+                    # 使用 pandas 读取临时文件，支持指定工作表
+                    excel_file_name = excel_filename or 'unknown.xlsx'
+                    if excel_file_name.endswith('.xlsx'):
+                        engine = 'openpyxl'
+                    elif excel_file_name.endswith('.xls'):
+                        engine = 'xlrd'
+                    else:
+                        engine = None  # 让pandas自动选择
+
+                    # 如果指定了工作表名称，则使用指定的工作表
+                    if sheet_name:
+                        df = pd.read_excel(tmp_path, sheet_name=sheet_name, engine=engine)
+                    else:
+                        # 否则使用第一个工作表
+                        df = pd.read_excel(tmp_path, engine=engine)
+
+                    # 验证必要的列是否存在
+                    required_columns = ['项目名称', '到货日期', '供应商', '物资类别', '规格', '数量', '单价（不含税）']
+                    missing_columns = [col for col in required_columns if col not in df.columns]
+
+                    if missing_columns:
+                        messages.error(request, f'Excel文件缺少必要的列: {", ".join(missing_columns)}')
+                        data_upload.status = 'failed'
+                        data_upload.save()
+                        # 清理会话数据
+                        if 'excel_tmp_path' in request.session:
+                            del request.session['excel_tmp_path']
+                        if 'excel_filename' in request.session:
+                            del request.session['excel_filename']
+                        return redirect('projects:project_excel')
+
+                    # 获取ID为1的默认地区
+                    try:
+                        default_region = Region.objects.get(id=1)
+                    except Region.DoesNotExist:
+                        messages.error(request, '系统中不存在ID为1的地区，请先创建默认地区')
+                        data_upload.status = 'failed'
+                        data_upload.save()
+                        # 清理会话数据
+                        if 'excel_tmp_path' in request.session:
+                            del request.session['excel_tmp_path']
+                        if 'excel_filename' in request.session:
+                            del request.session['excel_filename']
+                        return redirect('projects:project_excel')
+
+                    # 获取ID为1的默认品牌
+                    try:
+                        default_brand = Brand.objects.get(id=1)
+                    except Brand.DoesNotExist:
+                        messages.error(request, '系统中不存在ID为1的品牌，请先创建默认品牌')
+                        data_upload.status = 'failed'
+                        data_upload.save()
+                        # 清理会话数据
+                        if 'excel_tmp_path' in request.session:
+                            del request.session['excel_tmp_path']
+                        if 'excel_filename' in request.session:
+                            del request.session['excel_filename']
+                        return redirect('projects:project_excel')
+
+                    # 处理数据并保存到数据库
+                    success_count = 0
+                    error_messages = []
+
+                    with transaction.atomic():
+                        for index, row in df.iterrows():
+                            try:
+                                # 验证必要字段不为空
+                                if pd.isna(row['项目名称']) or pd.isna(row['到货日期']) or \
+                                        pd.isna(row['供应商']) or pd.isna(row['物资类别']) or \
+                                        pd.isna(row['规格']) or pd.isna(row['数量']) or \
+                                        pd.isna(row['单价（不含税）']):
+                                    raise ValueError("必要字段不能为空")
+
+                                # 处理项目映射
+                                project_name = str(row['项目名称']).strip()
+
+                                # 获取或创建项目映射，使用ID为1的地区作为默认地区
+                                project_mapping, created = ProjectMapping.objects.get_or_create(
+                                    project_name=project_name,
+                                    defaults={'region': default_region}
+                                )
+
+                                # 获取供应商
+                                supplier, created = Supplier.objects.get_or_create(
+                                    supplier_name=str(row['供应商']).strip()
+                                )
+
+                                # 获取物资类别
+                                category, created = MaterialCategory.objects.get_or_create(
+                                    category_name=str(row['物资类别']).strip()
+                                )
+
+                                # 获取规格
+                                specification, created = Specification.objects.get_or_create(
+                                    specification_name=str(row['规格']).strip(),
+                                    category=category
+                                )
+
+                                # 处理品牌 - 使用ID为1的品牌作为默认品牌
+                                brand = default_brand
+                                if '品牌' in row and pd.notna(row['品牌']) and str(row['品牌']).strip() not in ['/','']:
+                                    brand_name = str(row['品牌']).strip()
+                                    # 尝试查找现有品牌，如果不存在则创建新品牌
+                                    brand, created = Brand.objects.get_or_create(
+                                        brand_name=brand_name
+                                    )
+
+                                # 处理日期格式
+                                arrival_date = pd.to_datetime(row['到货日期'])
+
+                                # 处理数值字段
+                                try:
+                                    quantity = float(row['数量'])
+                                    unit_price = float(row['单价（不含税）'])
+                                    discount_rate = float(row.get('下浮率%', 0)) if pd.notna(
+                                        row.get('下浮率%', 0)) else 0
+                                except ValueError:
+                                    raise ValueError("数量、单价或下浮率格式不正确")
+
+                                # 创建项目
+                                Project.objects.create(
+                                    project_mapping=project_mapping,
+                                    arrival_date=arrival_date,
+                                    supplier=supplier,
+                                    category=category,
+                                    specification=specification,
+                                    quantity=quantity,
+                                    unit_price=unit_price,
+                                    discount_rate=discount_rate,
+                                    brand=brand,
+                                    user=request.user
+                                )
+                                success_count += 1
+
+                            except Exception as e:
+                                error_messages.append(f"第{index + 2}行数据导入失败: {str(e)}")  # +2因为索引从0开始，且第一行是标题行
+
+                    if error_messages:
+                        for error in error_messages:
+                            messages.warning(request, error)
+
+                    messages.success(request, f'成功导入 {success_count} 条数据')
+                    data_upload.status = 'completed'
+                    data_upload.save()
+
+                finally:
+                    # 删除临时文件
+                    os.unlink(tmp_path)
+                    # 清理会话数据
+                    if 'excel_tmp_path' in request.session:
+                        del request.session['excel_tmp_path']
+                    if 'excel_filename' in request.session:
+                        del request.session['excel_filename']
+
+            except Exception as e:
+                messages.error(request, f'导入过程中发生错误: {str(e)}')
+                data_upload.status = 'failed'
+                data_upload.save()
+                # 清理会话数据
+                if 'excel_tmp_path' in request.session:
+                    del request.session['excel_tmp_path']
+                if 'excel_filename' in request.session:
+                    del request.session['excel_filename']
+                # 删除临时文件
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+
+            return redirect('projects:project_list')
+        else:
+            messages.error(request, '文件信息丢失，请重新上传文件')
+            form = ExcelUploadForm()
+    else:
+        form = ExcelUploadForm()
+
+    return render(request, 'project_excel.html', {'form': form, 'preview_mode': False})
 
 
 # apps/projects/views.py
