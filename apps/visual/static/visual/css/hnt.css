@@ -1,0 +1,54 @@
+/* 地区选择下拉框样式 */
+#region-select-container {
+    z-index: 2;
+}
+
+.select-dropdown {
+    cursor: pointer;
+    padding-right: 2.5rem;
+}
+
+.multi-select-item.selected {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.multi-select-item.selected i {
+    color: #0d6efd;
+}
+
+/* 日期选择器样式 */
+.form-label-xs {
+    font-size: 0.75rem;
+}
+
+/* 图表容器样式 */
+.chart-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.chart-wrapper {
+    min-width: 600px;
+}
+
+/* 自定义动画效果 */
+.multi-select-item {
+    transition: background-color 0.2s ease;
+}
+
+.btn {
+    transition: all 0.2s ease;
+}
+
+/* 响应式调整 */
+@media (max-width: 576px) {
+    .card {
+        padding: 1rem;
+    }
+
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}

@@ -34,32 +34,6 @@ def admin_required(view_func):
     return _wrapped_view
 
 
-# 用于调试的视图
-def debug_regions(request):
-    """
-    调试地区数据
-    """
-    from django.http import HttpResponse
-
-    html = "<h2>地区数据调试</h2>"
-
-    # 显示所有市级数据
-    html += "<h3>市级数据:</h3><ul>"
-    cities = Region.objects.filter(district='')
-    for city in cities:
-        html += f"<li>ID: {city.id}, 城市: {city.city}, 区县: '{city.district}'</li>"
-    html += "</ul>"
-
-    # 显示前10个区县数据
-    html += "<h3>区县数据(前10条):</h3><ul>"
-    districts = Region.objects.exclude(district='').order_by('city')[:10]
-    for district in districts:
-        html += f"<li>ID: {district.id}, 城市: {district.city}, 区县: '{district.district}'</li>"
-    html += "</ul>"
-
-    return HttpResponse(html)
-
-
 @login_required
 def project_excel(request):
     """
@@ -804,59 +778,6 @@ def project_mapping_delete(request, mapping_id):
         'title': '删除项目映射'
     }
     return render(request, 'project_mapping_delete.html', context)
-
-@login_required
-def chart_data(request):
-    """获取图表数据"""
-    # 根据查询参数获取数据
-    chart_type = request.GET.get('type', 'monthly')
-
-    if request.user.is_admin():
-        projects = Project.objects.all()
-    else:
-        projects = Project.objects.filter(user=request.user)
-
-    # 根据图表类型返回不同数据
-    if chart_type == 'monthly':
-        # 单月数据：项目单价柱状图 + 信息价折线图
-        data = get_monthly_chart_data(projects)
-    else:
-        # 多月数据：各项目单价和信息价线
-        data = get_multi_month_chart_data(projects)
-
-    return JsonResponse(data)
-
-
-def get_monthly_chart_data(projects):
-    """获取单月图表数据"""
-    # 实现单月图表数据逻辑
-    data = {
-        'labels': [],  # 项目名称
-        'datasets': [
-            {
-                'label': '项目单价',
-                'data': [],
-                'type': 'bar'
-            },
-            {
-                'label': '信息价',
-                'data': [],
-                'type': 'line'
-            }
-        ]
-    }
-    return data
-
-
-def get_multi_month_chart_data(projects):
-    """获取多月图表数据"""
-    # 实现多月图表数据逻辑
-    data = {
-        'labels': [],  # 月份
-        'datasets': []
-    }
-    return data
-
 
 @require_http_methods(["GET"])
 def get_districts(request):

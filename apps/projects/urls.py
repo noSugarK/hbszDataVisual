@@ -21,5 +21,4 @@ urlpatterns = [
     path('api/districts/', views.get_districts, name='get_districts'),
     path('api/project-mapping-info/', views.get_project_mapping_info, name='get_project_mapping_info'),
     path('api/specifications/', views.get_specifications, name='get_specifications'),
-    path('chart-data/', views.chart_data, name='chart_data'),
 ]

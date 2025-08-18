@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}项目价格与信息价可视化{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'visual/css/hnt.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- 筛选条件区域 -->
+<section class="card shadow-sm p-4 mb-4">
+    <h2 class="h5 mb-4 d-flex align-items-center">
+        <i class="fa fa-filter text-primary me-2"></i>筛选条件
+    </h2>
+
+    <div class="row g-4">
+        <!-- 地区选择 - 多选下拉框 -->
+        <div class="col-12 col-md-6">
+            <label class="form-label small fw-medium text-secondary">选择地区 (可多选)</label>
+            <div class="position-relative" id="region-select-container">
+                <input type="text" placeholder="选择地区" readonly
+                       class="form-control select-dropdown" id="region-display">
+                <div class="dropdown-icon position-absolute end-0 top-0 d-flex align-items-center pe-3 text-secondary">
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <!-- 下拉选项 -->
+                <div class="d-none position-absolute top-100 start-0 end-0 mt-1 bg-white shadow-lg rounded border border-light z-10 max-h-60 overflow-y-auto" id="region-dropdown">
+                    {% for region in regions %}
+                        <div class="multi-select-item p-2 hover:bg-light cursor-pointer"
+                             data-region="{{ region.id }}"
+                             data-region-name="{{ region.city }}"
+                             data-field="{{ region.citypy }}">
+                            <i class="fa fa-check-circle-o me-2"></i>
+                            <span>{{ region.city }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 日期范围选择 -->
+        <div class="col-12 col-md-6">
+            <label class="form-label small fw-medium text-secondary">选择日期范围</label>
+            <div class="row g-3">
+                <div class="col-12 col-sm-6">
+                    <label for="start-date" class="form-label-xs text-secondary d-block mb-1">开始日期</label>
+                    <input type="month" id="start-date" class="form-control">
+                </div>
+                <div class="col-12 col-sm-6">
+                    <label for="end-date" class="form-label-xs text-secondary d-block mb-1">结束日期</label>
+                    <input type="month" id="end-date" class="form-control">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 按钮区域 -->
+    <div class="mt-4 d-flex gap-3">
+        <button id="apply-filters" class="btn btn-primary d-flex align-items-center">
+            <i class="fa fa-check me-2"></i>应用筛选
+        </button>
+        <button id="reset-filters" class="btn btn-outline-secondary d-flex align-items-center">
+            <i class="fa fa-refresh me-2"></i>重置筛选
+        </button>
+    </div>
+</section>
+
+<!-- 图表展示区域 -->
+<section class="card shadow-sm p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 id="chart-title" class="h5 d-flex align-items-center">
+            <i class="fa fa-bar-chart text-primary me-2"></i>月份-价格图
+        </h2>
+        <div class="text-sm text-secondary" id="chart-info">
+            显示: <span id="display-details">所有地区，最近3个月</span>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-wrapper" id="chart-wrapper">
+            <canvas id="price-chart" height="600"></canvas>
+        </div>
+    </div>
+
+    <!--div class="mt-3 text-sm text-secondary d-flex align-items-center">
+        <i class="fa fa-info-circle me-1"></i>
+        <span>提示：项目较多时可横向拖动查看全部数据</span>
+    </div-->
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'chart.js-4.5.0/dist/chart.umd.js' %}"></script>
+<script>
+    // 获取图表数据
+    function fetchChartData(filters) {
+        const url = new URL('{% url "visual:chart_hntdata" %}', window.location.origin);
+
+        filters.regions.forEach(region => {
+            url.searchParams.append('regions[]', region);
+        });
+        if (filters.startDate) {
+            url.searchParams.append('start_date', filters.startDate);
+        }
+        if (filters.endDate) {
+            url.searchParams.append('end_date', filters.endDate);
+        }
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`数据获取失败: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                renderChart(data, filters);
+            })
+            .catch(error => {
+                console.error('获取图表数据失败:', error);
+                document.getElementById('chart-wrapper').innerHTML =
+                    `<div class="text-center py-10 text-danger">获取数据失败: ${error.message}</div>`;
+            });
+    }
+</script>
+<script src="{% static 'visual/js/hnt.js' %}"></script>
+{% endblock %}
