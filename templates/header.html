@@ -14,12 +14,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'common:home' %}">首页</a>
                     </li>
-                    <!-- 只有管理员才能看到仪表盘链接 -->
-                    {% if user.is_superuser or user.permission == 'admin' %}
+                    <!-- 仪表盘链接 -->
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'projects:dashboard' %}">仪表盘</a>
                     </li>
-                    {% endif %}
+
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             项目管理

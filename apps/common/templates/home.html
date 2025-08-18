@@ -22,12 +22,10 @@
                         <a class="btn btn-outline-primary btn-lg" href="{% url 'projects:project_list' %}" role="button">
                             <i class="fas fa-list"></i> 查看项目列表
                         </a>
-                        <!-- 只有管理员才能看到仪表盘链接 -->
-                        {% if user.is_admin or user.is_staff %}
+                        <!-- 仪表盘链接 -->
                         <a class="btn btn-info btn-lg ms-2" href="{% url 'projects:dashboard' %}" role="button">
                             <i class="fas fa-tachometer-alt"></i> 仪表盘
                         </a>
-                        {% endif %}
                     </div>
                 {% else %}
                     <div class="mt-4">
@@ -74,7 +72,7 @@
     </div>
 
     <!-- 系统统计信息（仅管理员可见） -->
-    {% if user.is_authenticated and user.is_admin or user.is_staff %}
+    {% if user.is_superuser or user.permission == 'admin' %}
     <div class="row mt-5">
         <div class="col-12">
             <div class="card">

@@ -14,6 +14,7 @@
     </div>
 
     <!-- 统计卡片 -->
+    {% if user.is_superuser or user.permission == 'admin' %}
     <div class="row">
         <!-- 项目总数 -->
         <div class="col-xl-3 col-md-6 mb-4">
@@ -168,7 +169,7 @@
             </div>
         </div>
     </div>
-
+    {% endif %}
     <!-- 内容行 -->
     <div class="row">
         <!-- 最近项目列表 -->
@@ -189,6 +190,7 @@
                                         <th>物资类别</th>
                                         <th>数量</th>
                                         <th>单价</th>
+                                        <th>填报人</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -218,6 +220,7 @@
                                         </td>
                                         <td>{{ project.quantity }}</td>
                                         <td>{{ project.unit_price }}</td>
+                                        <td>{{ project.user.username }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
