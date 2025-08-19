@@ -9,121 +9,142 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">项目列表</h3>
-                    <div class="card-tools">
-                        <a href="{% url 'projects:project_add' %}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus"></i> 增加项目
-                        </a>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title">项目列表</h3>
+                        <div class="d-flex gap-2">
+                            <!-- 全局搜索框 -->
+                            <div class="input-group input-group-sm" style="width: 250px;">
+                                <input type="text" class="form-control form-control-sm" name="search"
+                                       placeholder="全局搜索..." value="{{ search_query }}" id="globalSearch">
+                                <button class="btn btn-outline-secondary btn-sm" type="button" id="searchBtn">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+
+                            <!-- 筛选按钮 -->
+                            <button class="btn btn-outline-primary btn-sm" type="button"
+                                    data-bs-toggle="offcanvas" data-bs-target="#filterOffcanvas">
+                                <i class="fas fa-filter"></i> 筛选
+                            </button>
+
+                            <!-- 添加项目按钮 -->
+                            <a href="{% url 'projects:project_add' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i> 增加项目
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <table class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>项目名称</th>
-                                <th>到货日期</th>
-                                <th>供应商</th>
-                                <th>物资类别</th>
-                                <th>规格</th>
-                                <th>数量</th>
-                                <th>单价</th>
-                                <th>下浮率(%)</th>
-                                <th>合计金额</th>
-                                <th>品牌</th>
-                                <th>地区</th>
-                                <th>填报用户</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for project in projects %}
-                            <tr>
-                                <td>
-                                    {% if project.project_mapping %}
-                                        {{ project.project_mapping.project_name }}
-                                    {% else %}
-                                        未指定
-                                    {% endif %}
-                                </td>
-                                <td>{{ project.arrival_date|date:"Y-m-d" }}</td>
-                                <td>
-                                    {% if project.supplier %}
-                                        {{ project.supplier.supplier_name }}
-                                    {% else %}
-                                        未指定
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if project.category %}
-                                        {{ project.category.category_name }}
-                                    {% else %}
-                                        未指定
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if project.specification %}
-                                        {{ project.specification.specification_name }}
-                                    {% else %}
-                                        未指定
-                                    {% endif %}
-                                </td>
-                                <td>{{ project.quantity }}</td>
-                                <td>{{ project.unit_price }}</td>
-                                <td>
-                                    {% if project.discount_rate %}
-                                        {{ project.discount_rate }}
-                                    {% else %}
-                                        0
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if project.total_amount %}
-                                        {{ project.total_amount }}
-                                    {% else %}
-                                        0
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if project.brand %}
-                                        {{ project.brand.brand_name }}
-                                    {% else %}
-                                        未指定
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if project.project_mapping and project.project_mapping.region %}
-                                        {{ project.project_mapping.region }}
-                                    {% else %}
-                                        未指定
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if project.user %}
-                                        {{ project.user.username }}
-                                    {% else %}
-                                        未知用户
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'projects:project_detail' project.id %}" class="btn btn-sm btn-info" title="查看">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    {% if user.is_admin or user.is_staff or project.user == user %}
-                                    <a href="{% url 'projects:project_edit' project.id %}" class="btn btn-sm btn-primary" title="编辑">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{% url 'projects:project_delete' project.id %}" class="btn btn-sm btn-danger" title="删除">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="12" style="text-align: center;">暂无项目数据</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>项目名称</th>
+                                    <th>到货日期</th>
+                                    <th>供应商</th>
+                                    <th>物资类别</th>
+                                    <th>规格</th>
+                                    <th>数量</th>
+                                    <th>单价</th>
+                                    <th>下浮率(%)</th>
+                                    <th>合计金额</th>
+                                    <th>品牌</th>
+                                    <th>地区</th>
+                                    <th>填报用户</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects %}
+                                <tr>
+                                    <td>
+                                        {% if project.project_mapping %}
+                                            {{ project.project_mapping.project_name }}
+                                        {% else %}
+                                            未指定
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ project.arrival_date|date:"Y-m-d" }}</td>
+                                    <td>
+                                        {% if project.supplier %}
+                                            {{ project.supplier.supplier_name }}
+                                        {% else %}
+                                            未指定
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.category %}
+                                            {{ project.category.category_name }}
+                                        {% else %}
+                                            未指定
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.specification %}
+                                            {{ project.specification.specification_name }}
+                                        {% else %}
+                                            未指定
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ project.quantity }}</td>
+                                    <td>{{ project.unit_price }}</td>
+                                    <td>
+                                        {% if project.discount_rate %}
+                                            {{ project.discount_rate }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.total_amount %}
+                                            {{ project.total_amount }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.brand %}
+                                            {{ project.brand.brand_name }}
+                                        {% else %}
+                                            未指定
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.project_mapping and project.project_mapping.region %}
+                                            {{ project.project_mapping.region }}
+                                        {% else %}
+                                            未指定
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if project.user %}
+                                            {{ project.user.username }}
+                                        {% else %}
+                                            未知用户
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <a href="{% url 'projects:project_detail' project.id %}" class="btn btn-sm btn-info" title="查看">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if user.is_admin or user.is_staff or project.user == user %}
+                                        <a href="{% url 'projects:project_edit' project.id %}" class="btn btn-sm btn-primary" title="编辑">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'projects:project_delete' project.id %}" class="btn btn-sm btn-danger" title="删除">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="13" class="text-center">暂无项目数据</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
 
                     <!-- 分页控件 -->
                     {% if projects.has_other_pages %}
@@ -132,10 +153,10 @@
                             <ul class="pagination justify-content-center">
                                 {% if projects.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page=1">&laquo; 首页</a>
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">&laquo; 首页</a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ projects.previous_page_number }}">上一页</a>
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ projects.previous_page_number }}">上一页</a>
                                     </li>
                                 {% endif %}
 
@@ -147,10 +168,10 @@
 
                                 {% if projects.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ projects.next_page_number }}">下一页</a>
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ projects.next_page_number }}">下一页</a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ projects.paginator.num_pages }}">末页 &raquo;</a>
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ projects.paginator.num_pages }}">末页 &raquo;</a>
                                     </li>
                                 {% endif %}
                             </ul>
@@ -162,4 +183,186 @@
         </div>
     </div>
 </div>
+
+<!-- 筛选侧边栏 -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="filterOffcanvas">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">筛选条件</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form method="GET" id="filterForm">
+            <div class="mb-3">
+                <label class="form-label">项目名称</label>
+                <select class="form-select form-select-sm" name="project_name">
+                    <option value="">全部项目</option>
+                    {% for name in project_names %}
+                        <option value="{{ name }}" {% if project_name_filter == name %}selected{% endif %}>
+                            {{ name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">供应商</label>
+                <select class="form-select form-select-sm" name="supplier">
+                    <option value="">全部供应商</option>
+                    {% for supplier_name in suppliers %}
+                        <option value="{{ supplier_name }}" {% if supplier_filter == supplier_name %}selected{% endif %}>
+                            {{ supplier_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">物资类别</label>
+                <select class="form-select form-select-sm" name="category" id="categorySelect">
+                    <option value="">全部类别</option>
+                    {% for category_name in categories %}
+                        <option value="{{ category_name }}" {% if category_filter == category_name %}selected{% endif %}>
+                            {{ category_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">规格</label>
+                <select class="form-select form-select-sm" name="specification" id="specificationSelect">
+                    <option value="">全部规格</option>
+                    {% for spec in specifications %}
+                        <option value="{{ spec.id }}" {% if specification_filter == spec.id|stringformat:"i" %}selected{% endif %}>
+                            {{ spec.specification_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">品牌</label>
+                <select class="form-select form-select-sm" name="brand">
+                    <option value="">全部品牌</option>
+                    {% for brand_name in brands %}
+                        <option value="{{ brand_name }}" {% if brand_filter == brand_name %}selected{% endif %}>
+                            {{ brand_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">地区</label>
+                <select class="form-select form-select-sm" name="region">
+                    <option value="">全部地区</option>
+                    {% for region in regions %}
+                        <option value="{{ region.id }}" {% if region_filter == region.id|stringformat:"i" %}selected{% endif %}>
+                            {{ region }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">填报用户</label>
+                <select class="form-select form-select-sm" name="user">
+                    <option value="">全部用户</option>
+                    {% for username in users %}
+                        <option value="{{ username }}" {% if user_filter == username %}selected{% endif %}>
+                            {{ username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">开始日期</label>
+                    <input type="date" class="form-control form-control-sm" name="start_date" value="{{ start_date }}">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">结束日期</label>
+                    <input type="date" class="form-control form-control-sm" name="end_date" value="{{ end_date }}">
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">应用筛选</button>
+                <a href="{% url 'projects:project_list' %}" class="btn btn-secondary btn-sm">重置筛选</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 全局搜索功能
+    const searchInput = document.getElementById('globalSearch');
+    const searchBtn = document.getElementById('searchBtn');
+
+    if (searchBtn) {
+        searchBtn.addEventListener('click', function() {
+            applyGlobalSearch();
+        });
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                applyGlobalSearch();
+            }
+        });
+    }
+
+    // 物资类别变化时更新规格选项
+    const categorySelect = document.getElementById('categorySelect');
+    const specificationSelect = document.getElementById('specificationSelect');
+
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            const categoryId = this.value;
+            if (categoryId) {
+                // 发送AJAX请求获取对应规格
+                fetch(`/projects/get_specifications/?category_id=${categoryId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // 清空现有选项
+                        specificationSelect.innerHTML = '<option value="">全部规格</option>';
+
+                        // 添加新选项
+                        data.specifications.forEach(spec => {
+                            const option = document.createElement('option');
+                            option.value = spec.id;
+                            option.textContent = spec.name;
+                            specificationSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error:', error));
+            } else {
+                // 如果没有选择类别，清空规格选项
+                specificationSelect.innerHTML = '<option value="">全部规格</option>';
+            }
+        });
+    }
+
+    function applyGlobalSearch() {
+        const searchTerm = searchInput.value.trim();
+        if (searchTerm) {
+            // 构建查询参数
+            const url = new URL(window.location);
+            url.searchParams.set('search', searchTerm);
+            url.searchParams.set('page', '1'); // 重置到第一页
+            window.location.href = url.toString();
+        } else if (searchTerm === '') {
+            // 如果搜索框为空，移除搜索参数
+            const url = new URL(window.location);
+            url.searchParams.delete('search');
+            window.location.href = url.toString();
+        }
+    }
+});
+</script>
 {% endblock %}

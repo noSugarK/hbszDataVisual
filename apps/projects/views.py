@@ -6,6 +6,7 @@ import pandas as pd
 
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -508,20 +509,102 @@ def project_add(request):
     }
 
     return render(request, 'project_add.html', context)
+
+
 @login_required
 def project_list(request):
     """
-    查看所有项目信息
+    查看所有项目信息，添加筛选和搜索功能
     """
-    # 获取所有项目数据，包含关联信息
+    # 获取基础查询集
     projects_list = Project.objects.select_related(
         'project_mapping__region',  # 项目映射及其地区
-        'supplier',                 # 供应商
-        'category',                 # 物资类别
-        'specification',            # 规格
-        'brand',                    # 品牌
-        'user'                      # 用户
-    ).all()
+        'supplier',  # 供应商
+        'category',  # 物资类别
+        'specification',  # 规格
+        'brand',  # 品牌
+        'user'  # 用户
+    )
+
+    # 获取搜索和筛选参数
+    search_query = request.GET.get('search', '')
+    project_name_filter = request.GET.get('project_name', '')
+    supplier_filter = request.GET.get('supplier', '')
+    category_filter = request.GET.get('category', '')
+    specification_filter = request.GET.get('specification', '')
+    brand_filter = request.GET.get('brand', '')
+    region_filter = request.GET.get('region', '')
+    user_filter = request.GET.get('user', '')
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
+
+    # 应用搜索条件（全局搜索）
+    if search_query:
+        projects_list = projects_list.filter(
+            Q(project_mapping__project_name__icontains=search_query) |
+            Q(supplier__supplier_name__icontains=search_query) |
+            Q(category__category_name__icontains=search_query) |
+            Q(specification__specification_name__icontains=search_query) |
+            Q(brand__brand_name__icontains=search_query) |
+            Q(project_mapping__region__city__icontains=search_query) |
+            Q(project_mapping__region__district__icontains=search_query) |
+            Q(user__username__icontains=search_query)
+        )
+
+    # 应用筛选条件
+    if project_name_filter:
+        projects_list = projects_list.filter(
+            project_mapping__project_name=project_name_filter
+        )
+
+    if supplier_filter:
+        projects_list = projects_list.filter(
+            supplier__supplier_name=supplier_filter
+        )
+
+    if category_filter:
+        projects_list = projects_list.filter(
+            category__category_name=category_filter
+        )
+
+    if specification_filter:
+        projects_list = projects_list.filter(
+            specification__id=specification_filter
+        )
+
+    if brand_filter:
+        projects_list = projects_list.filter(
+            brand__brand_name=brand_filter
+        )
+
+    if region_filter:
+        projects_list = projects_list.filter(
+            project_mapping__region__id=region_filter
+        )
+
+    if user_filter:
+        projects_list = projects_list.filter(
+            user__username=user_filter
+        )
+
+    if start_date:
+        projects_list = projects_list.filter(
+            arrival_date__gte=start_date
+        )
+
+    if end_date:
+        projects_list = projects_list.filter(
+            arrival_date__lte=end_date
+        )
+
+    # 获取筛选选项数据
+    project_names = ProjectMapping.objects.values_list('project_name', flat=True).distinct()
+    suppliers = Supplier.objects.values_list('supplier_name', flat=True).distinct()
+    categories = MaterialCategory.objects.values_list('category_name', flat=True).distinct()
+    brands = Brand.objects.values_list('brand_name', flat=True).distinct()
+    regions = Region.objects.all()
+    users = User.objects.values_list('username', flat=True).distinct()
+    specifications = Specification.objects.select_related('category')
 
     # 创建Paginator对象，每页显示20条数据
     paginator = Paginator(projects_list, 20)
@@ -530,7 +613,26 @@ def project_list(request):
     # 获取当前页的项目数据
     projects = paginator.get_page(page_number)
 
-    return render(request, 'project_list.html', {'projects': projects})
+    return render(request, 'project_list.html', {
+        'projects': projects,
+        'project_names': project_names,
+        'suppliers': suppliers,
+        'categories': categories,
+        'brands': brands,
+        'regions': regions,
+        'users': users,
+        'specifications': specifications,
+        'search_query': search_query,
+        'project_name_filter': project_name_filter,
+        'supplier_filter': supplier_filter,
+        'category_filter': category_filter,
+        'specification_filter': specification_filter,
+        'brand_filter': brand_filter,
+        'region_filter': region_filter,
+        'user_filter': user_filter,
+        'start_date': start_date,
+        'end_date': end_date,
+    })
 
 
 @login_required
@@ -654,7 +756,7 @@ def project_mapping_list(request):
     """
     显示所有项目映射信息
     """
-    mappings_list = ProjectMapping.objects.select_related('region').all()
+    mappings_list = ProjectMapping.objects.select_related('region').order_by('id')
     paginator = Paginator(mappings_list, 20)
     page_number = request.GET.get('page')
     mappings = paginator.get_page(page_number)
