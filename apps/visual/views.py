@@ -73,7 +73,11 @@ def chart_hntdata(request):
     project_mappings = ProjectMapping.objects.filter(region__in=region_instances)
 
     # 获取这些映射下的所有项目
-    project_query = Project.objects.filter(project_mapping__in=project_mappings)
+    project_query = Project.objects.filter(
+        project_mapping__in=project_mappings,
+        specification__category__category_name='商品混凝土',
+        specification__specification_name='C30'
+    )
     if start_date:
         project_query = project_query.filter(arrival_date__gte=start_date)
     if end_date:

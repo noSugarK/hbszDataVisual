@@ -34,34 +34,33 @@ function initRegionSelect() {
     const displayInput = document.getElementById('region-display');
     const regionItems = dropdown.querySelectorAll('.multi-select-item');
 
+    // 全选按钮
+    const selectAllBtn = document.getElementById('select-all-regions');
+    const deselectAllBtn = document.getElementById('deselect-all-regions');
+
     // 为每个地区项添加点击事件
     regionItems.forEach(item => {
         item.addEventListener('click', function(e) {
             e.stopPropagation();
-            item.classList.toggle('selected');
-
-            const field = item.dataset.field;
-            const regionName = item.dataset.regionName;
-
-            if (item.classList.contains('selected')) {
-                item.innerHTML = `
-                    <i class="fa fa-check-circle me-2"></i>
-                    <span>${regionName}</span>
-                `;
-                if (!selectedRegions.includes(field)) {
-                    selectedRegions.push(field);
-                }
-            } else {
-                item.innerHTML = `
-                    <i class="fa fa-check-circle-o me-2"></i>
-                    <span>${regionName}</span>
-                `;
-                selectedRegions = selectedRegions.filter(r => r !== field);
-            }
-
-            updateRegionDisplay();
+            toggleRegionSelection(item);
         });
     });
+
+    // 全选按钮事件
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            selectAllRegions();
+        });
+    }
+
+    // 取消全选按钮事件
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            deselectAllRegions();
+        });
+    }
 
     // 点击输入框显示/隐藏下拉框
     displayInput.addEventListener('click', function(e) {
@@ -70,7 +69,40 @@ function initRegionSelect() {
     });
 
     // 默认全选
+    selectAllRegions();
+}
+
+// 切换地区选择状态
+function toggleRegionSelection(item) {
+    item.classList.toggle('selected');
+
+    const field = item.dataset.field;
+    const regionName = item.dataset.regionName;
+
+    if (item.classList.contains('selected')) {
+        item.innerHTML = `
+            <i class="fa fa-check-circle me-2"></i>
+            <span>${regionName}</span>
+        `;
+        if (!selectedRegions.includes(field)) {
+            selectedRegions.push(field);
+        }
+    } else {
+        item.innerHTML = `
+            <i class="fa fa-check-circle-o me-2"></i>
+            <span>${regionName}</span>
+        `;
+        selectedRegions = selectedRegions.filter(r => r !== field);
+    }
+
+    updateRegionDisplay();
+}
+
+// 全选所有地区
+function selectAllRegions() {
+    const regionItems = document.querySelectorAll('.multi-select-item');
     selectedRegions = [];
+
     regionItems.forEach(item => {
         const field = item.dataset.field;
         item.classList.add('selected');
@@ -80,6 +112,23 @@ function initRegionSelect() {
         `;
         selectedRegions.push(field);
     });
+
+    updateRegionDisplay();
+}
+
+// 取消全选所有地区
+function deselectAllRegions() {
+    const regionItems = document.querySelectorAll('.multi-select-item');
+    selectedRegions = [];
+
+    regionItems.forEach(item => {
+        item.classList.remove('selected');
+        item.innerHTML = `
+            <i class="fa fa-check-circle-o me-2"></i>
+            <span>${item.dataset.regionName}</span>
+        `;
+    });
+
     updateRegionDisplay();
 }
 
@@ -147,20 +196,8 @@ function getSelectedFilters() {
 
 // 重置筛选条件
 function resetFilters() {
-    const regionItems = document.querySelectorAll('.multi-select-item');
-    selectedRegions = [];
-
-    regionItems.forEach(item => {
-        const field = item.dataset.field;
-        item.classList.add('selected');
-        item.innerHTML = `
-            <i class="fa fa-check-circle me-2"></i>
-            <span>${item.dataset.regionName}</span>
-        `;
-        selectedRegions.push(field);
-    });
-    updateRegionDisplay();
     initDateRange();
+    selectAllRegions(); // 重置时也全选地区
     updateChart();
 }
 
@@ -259,8 +296,8 @@ function prepareSingleMonthChart(projectData, referenceData, month) {
         type: 'bar',
         label: '项目月均单价',
         data: monthlyProjects.map(item => item.price),
-        backgroundColor: colors.map(c => adjustColor(c, 20, 0.6)),
-        borderColor: colors.map(c => adjustColor(c, -10, 0.8)),
+        backgroundColor: colors.map(c => adjustColor(c, 20, 0.7)), // 调整透明度使颜色更明显
+        borderColor: colors.map(c => adjustColor(c, -10, 0.9)),   // 调整边框颜色使其更清晰
         borderWidth: 1
     }];
 
@@ -275,8 +312,11 @@ function prepareSingleMonthChart(projectData, referenceData, month) {
             }),
             borderColor: referencePriceColor,
             backgroundColor: referencePriceColor,
-            borderWidth: 2,
+            borderWidth: 3, // 增加线宽
             pointRadius: 6,
+            pointBackgroundColor: referencePriceColor, // 确保点颜色可见
+            pointBorderColor: '#333', // 点边框颜色
+            pointBorderWidth: 2, // 点边框宽度
             fill: false,
             tension: 0.1,
             spanGaps: false // 缺失数据保持空白
@@ -305,8 +345,12 @@ function prepareMultipleMonthsChart(projectData, referenceData, months) {
                 return item ? item.price : null;
             }),
             borderColor: colors[index],
-            backgroundColor: colors[index],
-            borderWidth: 2,
+            backgroundColor: adjustColor(colors[index], 0, 0.2), // 添加轻微填充使线条更清晰
+            borderWidth: 3, // 增加线宽
+            pointRadius: 5,
+            pointBackgroundColor: colors[index], // 确保点颜色可见
+            pointBorderColor: '#333', // 使用深色边框
+            pointBorderWidth: 1,
             fill: false,
             spanGaps: false
         });
@@ -325,8 +369,11 @@ function prepareMultipleMonthsChart(projectData, referenceData, months) {
             borderColor: referencePriceColor,
             borderWidth: 3,
             borderDash: [5, 5],
-            fill: false,
             pointRadius: 5,
+            pointBackgroundColor: referencePriceColor, // 确保点颜色可见
+            pointBorderColor: '#333', // 使用深色边框
+            pointBorderWidth: 1,
+            fill: false,
             spanGaps: false
         });
     });
@@ -344,7 +391,30 @@ function getSingleMonthOptions() {
         maintainAspectRatio: false,
         height: CHART_HEIGHT,
         scales: {
-            y: { title: { display: true, text: '单价' } }
+            y: {
+                title: { display: true, text: '单价' },
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.1)' // 网格线颜色
+                },
+                ticks: {
+                    color: '#333' // 刻度文字颜色
+                }
+            },
+            x: {
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.1)' // 网格线颜色
+                },
+                ticks: {
+                    color: '#333' // 刻度文字颜色
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#333' // 图例文字颜色
+                }
+            }
         }
     };
 }
@@ -355,8 +425,31 @@ function getMultipleMonthsOptions() {
         maintainAspectRatio: false,
         height: CHART_HEIGHT,
         scales: {
-            x: { title: { display: true, text: '月份' } },
-            y: { title: { display: true, text: '单价' } }
+            x: {
+                title: { display: true, text: '月份' },
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.1)' // 网格线颜色
+                },
+                ticks: {
+                    color: '#333' // 刻度文字颜色
+                }
+            },
+            y: {
+                title: { display: true, text: '单价' },
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.1)' // 网格线颜色
+                },
+                ticks: {
+                    color: '#333' // 刻度文字颜色
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#333' // 图例文字颜色
+                }
+            }
         }
     };
 }
@@ -379,8 +472,9 @@ function updateChartInfo(filters) {
 
 // 生成不同的颜色
 function getDistinctColors(count) {
+    // 移除了白色 '#f8f9fa'，使用更鲜明的颜色
     const colors = [
-        '#0d6efd', '#198754', '#6610f2', '#fd7e14', '#dc3545', '#f8f9fa',
+        '#0d6efd', '#198754', '#6610f2', '#fd7e14', '#dc3545', "#0d6efd",
         '#20c997', '#0dcaf0', '#7b61ff', '#ff5722', '#eb2f96', '#00b42a',
         '#8B4513', '#20B2AA', '#FF6347', '#4682B4', '#BA55D3', '#F0E68C'
     ];

@@ -26,6 +26,15 @@
                 </div>
                 <!-- 下拉选项 -->
                 <div class="d-none position-absolute top-100 start-0 end-0 mt-1 bg-white shadow-lg rounded border border-light z-10 max-h-60 overflow-y-auto" id="region-dropdown">
+                    <!-- 全选/取消全选按钮 -->
+                    <div class="p-2 border-bottom">
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" id="select-all-regions">
+                            <i class="fa fa-check-square me-1"></i>全选
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all-regions">
+                            <i class="fa fa-square-o me-1"></i>清空
+                        </button>
+                    </div>
                     {% for region in regions %}
                         <div class="multi-select-item p-2 hover:bg-light cursor-pointer"
                              data-region="{{ region.id }}"
@@ -79,7 +88,8 @@
 
     <div class="chart-container">
         <div class="chart-wrapper" id="chart-wrapper">
-            <canvas id="price-chart" height="600"></canvas>
+            {# <canvas id="price-chart" width="400" height="600">可以修改图表宽高 #}
+            <canvas id="price-chart" width="400" height="600"></canvas>
         </div>
     </div>
 
