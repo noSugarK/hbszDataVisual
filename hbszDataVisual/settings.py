@@ -97,13 +97,18 @@ WSGI_APPLICATION = "hbszDataVisual.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        'NAME': os.environ.get('DB_NAME', 'hbsz'),             # 替换为你的数据库名称
-        'USER': os.environ.get('DB_USER', 'root'),             # 替换为你的数据库用户名
-        'PASSWORD': os.environ.get('DB_PASSWORD', '123456'),       # 替换为你的数据库密码
-        'HOST': os.environ.get('DB_HOST', 'db'),        # 数据库服务器地址，通常是 localhost
-        'PORT': os.environ.get('DB_PORT', '3306'),
+        'NAME': os.environ.get('DB_NAME', 'cloud1-3gsvzht6bc32608a'),  # 数据库名
+        'USER': os.environ.get('DB_USER', 'hbsz'),                     # 用户名
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'hbszSql1'),         # 密码
+        'HOST': os.environ.get('DB_HOST', 'sh-cynosdbmysql-grp-phca9ljw.sql.tencentcdb.com'),        # 数据库服务器地址，通常是 localhost
+        'PORT': os.environ.get('DB_PORT', '28709'),                     # 端口
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
     }
 }
+
 
 
 # Password validation
