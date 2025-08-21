@@ -13,8 +13,8 @@
                 </div>
                 <div class="card-body">
                     <div class="alert alert-warning">
-                        <h4><i class="icon fas fa-exclamation-triangle"></i> 日期已存在</h4>
-                        <p>{{ date }} 的信息价记录已存在。请查看现有数据和新输入数据的对比：</p>
+                        <h4><i class="icon fas fa-exclamation-triangle"></i> {{ date | date:"Y年m月" }}</h4>
+                        <p>信息价记录已存在。请查看现有数据和新输入数据的对比：</p>
                     </div>
 
                     <form method="post">
@@ -47,10 +47,20 @@
                                             <tbody>
                                                 <tr>
                                                     <td>武汉市</td>
-                                                    <td>{{ existing_price.wuhan|default:"-" }}</td>
+                                                    <td>{{ existing_price.wuhan|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.wuhan %}
-                                                            <span class="text-success">{{ form_data.wuhan }}</span>
+                                                            {% with existing_price.wuhan|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.wuhan|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.wuhan|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.wuhan|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.wuhan|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -58,10 +68,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>黄石市</td>
-                                                    <td>{{ existing_price.huangshi|default:"-" }}</td>
+                                                    <td>{{ existing_price.huangshi|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.huangshi %}
-                                                            <span class="text-success">{{ form_data.huangshi }}</span>
+                                                            {% with existing_price.huangshi|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.huangshi|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.huangshi|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.huangshi|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.huangshi|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -69,10 +89,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>十堰市</td>
-                                                    <td>{{ existing_price.shiyan|default:"-" }}</td>
+                                                    <td>{{ existing_price.shiyan|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.shiyan %}
-                                                            <span class="text-success">{{ form_data.shiyan }}</span>
+                                                            {% with existing_price.shiyan|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.shiyan|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.shiyan|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.shiyan|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.shiyan|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -80,10 +110,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>宜昌市</td>
-                                                    <td>{{ existing_price.yichang|default:"-" }}</td>
+                                                    <td>{{ existing_price.yichang|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.yichang %}
-                                                            <span class="text-success">{{ form_data.yichang }}</span>
+                                                            {% with existing_price.yichang|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.yichang|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.yichang|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.yichang|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.yichang|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -91,10 +131,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>襄阳市</td>
-                                                    <td>{{ existing_price.xiangyang|default:"-" }}</td>
+                                                    <td>{{ existing_price.xiangyang|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.xiangyang %}
-                                                            <span class="text-success">{{ form_data.xiangyang }}</span>
+                                                            {% with existing_price.xiangyang|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.xiangyang|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.xiangyang|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.xiangyang|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.xiangyang|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -102,10 +152,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>鄂州市</td>
-                                                    <td>{{ existing_price.ezhou|default:"-" }}</td>
+                                                    <td>{{ existing_price.ezhou|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.ezhou %}
-                                                            <span class="text-success">{{ form_data.ezhou }}</span>
+                                                            {% with existing_price.ezhou|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.ezhou|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.ezhou|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.ezhou|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.ezhou|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -113,10 +173,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>荆门市</td>
-                                                    <td>{{ existing_price.jingmen|default:"-" }}</td>
+                                                    <td>{{ existing_price.jingmen|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.jingmen %}
-                                                            <span class="text-success">{{ form_data.jingmen }}</span>
+                                                            {% with existing_price.jingmen|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.jingmen|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.jingmen|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.jingmen|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.jingmen|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -124,10 +194,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>孝感市</td>
-                                                    <td>{{ existing_price.xiaogan|default:"-" }}</td>
+                                                    <td>{{ existing_price.xiaogan|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.xiaogan %}
-                                                            <span class="text-success">{{ form_data.xiaogan }}</span>
+                                                            {% with existing_price.xiaogan|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.xiaogan|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.xiaogan|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.xiaogan|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.xiaogan|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -135,10 +215,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>荆州市</td>
-                                                    <td>{{ existing_price.jingzhou|default:"-" }}</td>
+                                                    <td>{{ existing_price.jingzhou|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.jingzhou %}
-                                                            <span class="text-success">{{ form_data.jingzhou }}</span>
+                                                            {% with existing_price.jingzhou|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.jingzhou|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.jingzhou|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.jingzhou|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.jingzhou|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -146,10 +236,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>黄冈市</td>
-                                                    <td>{{ existing_price.huanggang|default:"-" }}</td>
+                                                    <td>{{ existing_price.huanggang|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.huanggang %}
-                                                            <span class="text-success">{{ form_data.huanggang }}</span>
+                                                            {% with existing_price.huanggang|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.huanggang|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.huanggang|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.huanggang|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.huanggang|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -157,10 +257,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>咸宁市</td>
-                                                    <td>{{ existing_price.xianning|default:"-" }}</td>
+                                                    <td>{{ existing_price.xianning|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.xianning %}
-                                                            <span class="text-success">{{ form_data.xianning }}</span>
+                                                            {% with existing_price.xianning|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.xianning|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.xianning|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.xianning|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.xianning|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -168,10 +278,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>随州市</td>
-                                                    <td>{{ existing_price.suizhou|default:"-" }}</td>
+                                                    <td>{{ existing_price.suizhou|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.suizhou %}
-                                                            <span class="text-success">{{ form_data.suizhou }}</span>
+                                                            {% with existing_price.suizhou|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.suizhou|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.suizhou|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.suizhou|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.suizhou|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -179,10 +299,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>恩施市</td>
-                                                    <td>{{ existing_price.enshi|default:"-" }}</td>
+                                                    <td>{{ existing_price.enshi|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.enshi %}
-                                                            <span class="text-success">{{ form_data.enshi }}</span>
+                                                            {% with existing_price.enshi|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.enshi|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.enshi|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.enshi|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.enshi|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -190,10 +320,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>仙桃市</td>
-                                                    <td>{{ existing_price.xiantao|default:"-" }}</td>
+                                                    <td>{{ existing_price.xiantao|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.xiantao %}
-                                                            <span class="text-success">{{ form_data.xiantao }}</span>
+                                                            {% with existing_price.xiantao|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.xiantao|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.xiantao|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.xiantao|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.xiantao|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -201,10 +341,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>潜江市</td>
-                                                    <td>{{ existing_price.qianjiang|default:"-" }}</td>
+                                                    <td>{{ existing_price.qianjiang|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.qianjiang %}
-                                                            <span class="text-success">{{ form_data.qianjiang }}</span>
+                                                            {% with existing_price.qianjiang|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.qianjiang|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.qianjiang|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.qianjiang|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.qianjiang|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -212,10 +362,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>天门市</td>
-                                                    <td>{{ existing_price.tianmen|default:"-" }}</td>
+                                                    <td>{{ existing_price.tianmen|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.tianmen %}
-                                                            <span class="text-success">{{ form_data.tianmen }}</span>
+                                                            {% with existing_price.tianmen|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.tianmen|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.tianmen|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.tianmen|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.tianmen|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}
@@ -223,10 +383,20 @@
                                                 </tr>
                                                 <tr>
                                                     <td>神农架</td>
-                                                    <td>{{ existing_price.shennongjia|default:"-" }}</td>
+                                                    <td>{{ existing_price.shennongjia|floatformat:2|default:"-" }}</td>
                                                     <td>
                                                         {% if form_data.shennongjia %}
-                                                            <span class="text-success">{{ form_data.shennongjia }}</span>
+                                                            {% with existing_price.shennongjia|floatformat:2 as existing_value %}
+                                                                {% if existing_value and existing_value != "-" %}
+                                                                    {% if form_data.shennongjia|floatformat:2 == existing_value %}
+                                                                        <span class="text-success">{{ form_data.shennongjia|floatformat:2 }}</span>
+                                                                    {% else %}
+                                                                        <span class="text-danger">{{ form_data.shennongjia|floatformat:2 }}</span>
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    <span class="text-danger">{{ form_data.shennongjia|floatformat:2 }}</span>
+                                                                {% endif %}
+                                                            {% endwith %}
                                                         {% else %}
                                                             <span class="text-muted">-</span>
                                                         {% endif %}

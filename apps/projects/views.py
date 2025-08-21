@@ -28,7 +28,7 @@ def admin_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('users:login')
-        if not (request.user.is_admin or request.user.is_staff):
+        if not (request.user.is_superuser or request.user.permission == 'admin'):
             messages.error(request, '您没有权限访问此页面。')
             return redirect('common:home')
         return view_func(request, *args, **kwargs)
@@ -473,7 +473,6 @@ def project_mapping_excel(request):
     return render(request, 'project_mapping_excel.html', {'form': form, 'preview_mode': False})
 
 
-# apps/projects/views.py
 @login_required
 def project_add(request):
     if request.method == 'POST':
@@ -516,8 +515,8 @@ def project_list(request):
     """
     查看所有项目信息，添加筛选和搜索功能
     """
-    # 获取基础查询集
-    projects_list = Project.objects.select_related(
+    # 获取基础查询集 - 根据用户权限决定展示范围
+    projects_queryset = Project.objects.select_related(
         'project_mapping__region',  # 项目映射及其地区
         'supplier',  # 供应商
         'category',  # 物资类别
@@ -525,6 +524,12 @@ def project_list(request):
         'brand',  # 品牌
         'user'  # 用户
     )
+
+    # 权限控制：管理员可以看到所有项目，普通用户只能看到自己填报的项目
+    if not (request.user.is_superuser or request.user.permission == 'admin'):
+        projects_list = projects_queryset.filter(user=request.user)
+    else:
+        projects_list = projects_queryset
 
     # 获取搜索和筛选参数
     search_query = request.GET.get('search', '')
@@ -583,9 +588,11 @@ def project_list(request):
         )
 
     if user_filter:
-        projects_list = projects_list.filter(
-            user__username=user_filter
-        )
+        # 管理员可以按用户筛选，普通用户只能看到自己的数据，不需要按用户筛选
+        if request.user.is_superuser or request.user.permission == 'admin':
+            projects_list = projects_list.filter(
+                user__username=user_filter
+            )
 
     if start_date:
         projects_list = projects_list.filter(
@@ -597,13 +604,27 @@ def project_list(request):
             arrival_date__lte=end_date
         )
 
-    # 获取筛选选项数据
-    project_names = ProjectMapping.objects.values_list('project_name', flat=True).distinct()
-    suppliers = Supplier.objects.values_list('supplier_name', flat=True).distinct()
-    categories = MaterialCategory.objects.values_list('category_name', flat=True).distinct()
-    brands = Brand.objects.values_list('brand_name', flat=True).distinct()
-    regions = Region.objects.all()
-    users = User.objects.values_list('username', flat=True).distinct()
+    # 获取筛选选项数据 - 根据用户权限决定
+    if request.user.is_superuser or request.user.permission == 'admin':
+        # 管理员可以看到所有选项
+        project_names = ProjectMapping.objects.values_list('project_name', flat=True).distinct()
+        suppliers = Supplier.objects.values_list('supplier_name', flat=True).distinct()
+        categories = MaterialCategory.objects.values_list('category_name', flat=True).distinct()
+        brands = Brand.objects.values_list('brand_name', flat=True).distinct()
+        regions = Region.objects.all()
+        users = User.objects.values_list('username', flat=True).distinct()
+    else:
+        # 普通用户只能看到与自己相关的选项
+        user_projects = projects_queryset.filter(user=request.user)
+        project_names = user_projects.values_list('project_mapping__project_name', flat=True).distinct()
+        suppliers = user_projects.values_list('supplier__supplier_name', flat=True).distinct()
+        categories = user_projects.values_list('category__category_name', flat=True).distinct()
+        brands = user_projects.values_list('brand__brand_name', flat=True).distinct()
+        regions = Region.objects.filter(
+            projectmapping__project__user=request.user
+        ).distinct()
+        users = [request.user.username]  # 普通用户只能看到自己
+
     specifications = Specification.objects.select_related('category')
 
     # 创建Paginator对象，每页显示20条数据
@@ -641,7 +662,7 @@ def project_detail(request, project_id):
     project = get_object_or_404(Project, id=project_id)
 
     # 检查权限：管理员可以查看所有项目，普通用户只能查看自己的项目
-    if not request.user.is_admin and not request.user.is_staff and project.user != request.user:
+    if not request.user.is_superuser and not request.user.permission == 'admin' and project.user != request.user:
         messages.error(request, '您没有权限查看此项目。')
         return redirect('projects:project_list')
 
@@ -658,7 +679,7 @@ def project_edit(request, project_id):
     project = get_object_or_404(Project, id=project_id)
 
     # 检查权限：管理员可以编辑所有项目，普通用户只能编辑自己的项目
-    if not request.user.is_admin and not request.user.is_staff and project.user != request.user:
+    if not request.user.is_superuser and not request.user.permission == 'admin' and project.user != request.user:
         messages.error(request, '您没有权限编辑此项目。')
         return redirect('projects:project_list')
 
@@ -701,7 +722,7 @@ def project_delete(request, project_id):
     project = get_object_or_404(Project, id=project_id)
 
     # 检查权限：管理员可以删除所有项目，普通用户只能删除自己的项目
-    if not request.user.is_admin and not request.user.is_staff and project.user != request.user:
+    if not request.user.is_superuser and not request.user.permission == 'admin' and project.user != request.user:
         messages.error(request, '您没有权限删除此项目。')
         return redirect('projects:project_list')
 
@@ -768,10 +789,8 @@ def project_mapping_list(request):
     return render(request, 'project_mapping_list.html', context)
 
 @admin_required
-@login_required
 def dashboard(request):
     """可视化仪表板 - 仅管理员可见"""
-    # 获取所有数据（仅管理员可见）
     projects = Project.objects.all()
     concrete_prices = ConcretePrice.objects.all()
     users = User.objects.all()
@@ -799,14 +818,13 @@ def dashboard(request):
     return render(request, 'dashboard.html', context)
 
 
-
 @login_required
 def project_mapping_detail(request, mapping_id):
     """查看项目映射详情"""
     mapping = get_object_or_404(ProjectMapping, id=mapping_id)
 
     # 检查权限：只有管理员可以查看项目映射详情
-    if not request.user.is_admin and not request.user.is_staff:
+    if not request.user.is_superuser and not request.user.permission == 'admin':
         messages.error(request, '您没有权限查看项目映射详情。')
         return redirect('projects:project_mapping_list')
 
@@ -823,7 +841,7 @@ def project_mapping_edit(request, mapping_id):
     mapping = get_object_or_404(ProjectMapping, id=mapping_id)
 
     # 检查权限：只有管理员可以编辑项目映射
-    if not request.user.is_admin and not request.user.is_staff:
+    if not request.user.is_superuser and not request.user.permission == 'admin':
         messages.error(request, '您没有权限编辑项目映射。')
         return redirect('projects:project_mapping_list')
 
@@ -860,7 +878,7 @@ def project_mapping_delete(request, mapping_id):
     mapping = get_object_or_404(ProjectMapping, id=mapping_id)
 
     # 检查权限：只有管理员可以删除项目映射
-    if not request.user.is_admin and not request.user.is_staff:
+    if not request.user.is_superuser and not request.user.permission == 'admin':
         messages.error(request, '您没有权限删除项目映射。')
         return redirect('projects:project_mapping_list')
 
@@ -931,16 +949,6 @@ def get_project_mapping_info(request):
         except ProjectMapping.DoesNotExist:
             pass
     return JsonResponse({})
-
-
-@require_http_methods(["GET"])
-def get_specifications(request):
-    """
-    根据物资类别获取规格列表
-    """
-    category_id = request.GET.get('category_id')
-    if category_id:
-        specifications = Specification.objects.filter
 
 @require_http_methods(["GET"])
 def get_specifications(request):

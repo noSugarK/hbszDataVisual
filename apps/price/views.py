@@ -1,5 +1,5 @@
 # apps/price/views.py
-from datetime import datetime, timedelta
+from datetime import timedelta, date
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -18,7 +18,6 @@ from ..projects.views import admin_required
 
 
 @admin_required
-@login_required
 def price_list(request):
     """信息价列表"""
     # 获取所有信息价记录，按日期倒序排列
@@ -37,14 +36,23 @@ def price_list(request):
 
 
 @admin_required
-@login_required
 def price_add(request):
     """添加信息价"""
     if request.method == 'POST':
-        date = request.POST.get('date')
+        date_str = request.POST.get('date')
         action = request.POST.get('action', 'add')  # add, confirm, update
 
-        if date:
+        if date_str:
+            # 将月份字符串转换为该月第一天的日期
+            try:
+                # 解析年月格式（例如：2023-05）
+                year, month = map(int, date_str.split('-'))
+                # 设置为该月第一天
+                target_date = date(year, month, 1)
+            except ValueError:
+                messages.error(request, '月份格式不正确！')
+                return redirect('price:price_add')
+
             # 获取表单中提交的所有城市价格数据
             city_fields = [
                 'wuhan', 'huanggang', 'xiangyang', 'shiyan', 'jingzhou',
@@ -63,15 +71,15 @@ def price_add(request):
                     form_data[field] = None
 
             # 检查该日期是否已存在记录
-            existing_price = ConcretePrice.objects.filter(date=date).first()
+            existing_price = ConcretePrice.objects.filter(date=target_date).first()
 
             if existing_price and action == 'add':
                 # 日期已存在，显示确认页面
                 context = {
-                    'date': date,
+                    'date': target_date,  # 使用实际日期格式
                     'form_data': form_data,
                     'existing_price': existing_price,
-                    'title': '日期已存在'
+                    'title': '确认更新信息价'
                 }
                 return render(request, 'price_confirm.html', context)
 
@@ -93,15 +101,16 @@ def price_add(request):
                     if updated_fields:
                         existing_price.user = request.user
                         existing_price.save()
-                        messages.success(request, f'{date} 的信息价已更新！更新了 {len(updated_fields)} 个城市的字段。')
+                        messages.success(request,
+                                         f'{target_date} 的信息价已更新！更新了 {len(updated_fields)} 个城市的字段。')
                     else:
-                        messages.info(request, f'{date} 的信息价无变化。')
+                        messages.info(request, f'{target_date} 的信息价无变化。')
                 else:
                     # 创建新记录
                     has_data = any(value is not None for value in form_data.values())
 
                     if has_data:
-                        price = ConcretePrice(date=date, user=request.user)
+                        price = ConcretePrice(date=target_date, user=request.user)
                         for field, value in form_data.items():
                             setattr(price, field, value)
                         price.save()
@@ -116,7 +125,7 @@ def price_add(request):
                 has_data = any(value is not None for value in form_data.values())
 
                 if has_data:
-                    price = ConcretePrice(date=date, user=request.user)
+                    price = ConcretePrice(date=target_date, user=request.user)
                     for field, value in form_data.items():
                         setattr(price, field, value)
                     price.save()
@@ -126,9 +135,24 @@ def price_add(request):
 
                 return redirect('price:price_list')
         else:
-            messages.error(request, '请选择日期！')
+            messages.error(request, '请选择月份！')
 
     # GET请求 - 显示添加表单
+    # 检查是否有日期参数，如果有的话检查是否已存在记录
+    date_param = request.GET.get('date', '')
+    existing_data = None
+
+    if date_param:
+        try:
+            # 解析年月格式（例如：2023-05）
+            year, month = map(int, date_param.split('-'))
+            # 设置为该月第一天
+            target_date = date(year, month, 1)
+            # 检查是否存在记录
+            existing_data = ConcretePrice.objects.filter(date=target_date).first()
+        except ValueError:
+            pass  # 日期格式不正确，忽略
+
     cities = [
         {'name': '武汉', 'field': 'wuhan', 'verbose_name': '武汉市'},
         {'name': '黄冈', 'field': 'huanggang', 'verbose_name': '黄冈市'},
@@ -151,13 +175,14 @@ def price_add(request):
 
     context = {
         'cities': cities,
-        'title': '添加混凝土信息价'
+        'title': '添加混凝土信息价',
+        'date': date_param,
+        'existing_data': existing_data
     }
     return render(request, 'price_add.html', context)
 
 
 @admin_required
-@login_required
 def price_edit(request, price_id):
     """编辑信息价"""
     price = get_object_or_404(ConcretePrice, id=price_id)
@@ -264,7 +289,6 @@ def price_edit(request, price_id):
 
 
 @admin_required
-@login_required
 def price_delete(request, price_id):
     """删除信息价"""
     price = get_object_or_404(ConcretePrice, id=price_id)

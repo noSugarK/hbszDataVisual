@@ -6,12 +6,13 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Min, Max, Q, Avg
 from apps.projects.models import Project, ProjectMapping
+from apps.projects.views import admin_required
 from apps.region.models import Region
 from apps.price.models import ConcretePrice
 from datetime import date
 
 
-@login_required
+@admin_required
 def chart_hnt(request):
     """
     可视化图表首页

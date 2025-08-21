@@ -59,7 +59,7 @@
                             <tbody>
                                 {% for price in prices %}
                                 <tr>
-                                    <td>{{ price.date }}</td>
+                                    <td>{{ price.date | date:"Y-m" }}</td>
                                     <td>{{ price.wuhan|default:"-" }}</td>
                                     <td>{{ price.huangshi|default:"-" }}</td>
                                     <td>{{ price.shiyan|default:"-" }}</td>

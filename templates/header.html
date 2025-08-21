@@ -19,9 +19,11 @@
                         <a class="nav-link" href="{% url 'projects:dashboard' %}">仪表盘</a>
                     </li>
 
+                    {% if user.is_superuser or user.permission == 'admin' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'visual:chart_hnt' %}">可视化图表</a>
                     </li>
+                    {% endif %}
 
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -53,23 +55,12 @@
                             <li><a class="dropdown-item" href="{% url 'category:category_list' %}">物资类别</a></li>
                             <li><a class="dropdown-item" href="{% url 'specification:specification_list' %}">规格</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            {% endif %}
                             <li><a class="dropdown-item" href="{% url 'price:price_list' %}">信息价</a></li>
+                            {% endif %}
                             <li><a class="dropdown-item" href="{% url 'price:price_chart' %}">信息价图表</a></li>
                         </ul>
                     </li>
 
-                    {% if user.is_superuser or user.permission == 'admin' %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            用户管理
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'users:user_list' %}">用户列表</a></li>
-                            <li><a class="dropdown-item" href="{% url 'users:user_register' %}">注册用户</a></li>
-                        </ul>
-                    </li>
-                    {% endif %}
                 </ul>
 
                 <ul class="navbar-nav">
@@ -83,6 +74,8 @@
                             <!-- 只有管理员才能看到仪表盘链接 -->
                             {% if user.is_superuser or user.permission == 'admin' %}
                             <li><a class="dropdown-item" href="{% url 'projects:dashboard' %}">仪表盘</a></li>
+                            <li><a class="dropdown-item" href="{% url 'users:user_list' %}">用户列表</a></li>
+                            <li><a class="dropdown-item" href="{% url 'users:user_register' %}">注册用户</a></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'users:logout' %}">退出</a></li>

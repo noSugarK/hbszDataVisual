@@ -25,14 +25,21 @@
                         {% endfor %}
                     {% endif %}
 
-                    <form method="post">
+                    <form method="post" id="priceForm">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="add">
                         <div class="form-group">
-                            <label for="date">日期 *</label>
-                            <input type="date" class="form-control" id="date" name="date"
+                            <label for="date">月份 *</label>
+                            <input type="month" class="form-control" id="date" name="date"
                                    value="{{ date|default:'' }}" required>
                         </div>
+
+                        {% if existing_data %}
+                        <div class="alert alert-info">
+                            <h5><i class="icon fas fa-info-circle"></i> 提示</h5>
+                            <p>检测到 {{ date }} 的信息价记录已存在，表单已自动加载现有数据。您可以修改后保存。</p>
+                        </div>
+                        {% endif %}
 
                         <div class="row">
                             {% for city in cities %}
@@ -58,4 +65,21 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('date');
+        const form = document.getElementById('priceForm');
+
+        dateInput.addEventListener('change', function() {
+            const selectedDate = this.value;
+            if (selectedDate) {
+                // 重新加载页面并传递日期参数
+                window.location.href = '{% url "price:price_add" %}?date=' + selectedDate;
+            }
+        });
+    });
+</script>
 {% endblock %}
