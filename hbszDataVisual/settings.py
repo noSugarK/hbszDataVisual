@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,10 +24,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-$g30c(@5=s(rgy5%os*+^d&&_=w!o%#6fnua)n39am(jpcih7b"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1','172.20.21.158','172.18.20.251']
+ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.sh.run.tcloudbase.com',  # 可选：通配子域名
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
 
 # Application definition
 
@@ -91,11 +97,11 @@ WSGI_APPLICATION = "hbszDataVisual.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        'NAME': 'hbsz',             # 替换为你的数据库名称
-        'USER': 'root',             # 替换为你的数据库用户名
-        'PASSWORD': '123456',       # 替换为你的数据库密码
-        'HOST': 'localhost',        # 数据库服务器地址，通常是 localhost
-        'PORT': '3306',
+        'NAME': os.environ.get('DB_NAME', 'hbsz'),             # 替换为你的数据库名称
+        'USER': os.environ.get('DB_USER', 'root'),             # 替换为你的数据库用户名
+        'PASSWORD': os.environ.get('DB_PASSWORD', '123456'),       # 替换为你的数据库密码
+        'HOST': os.environ.get('DB_HOST', 'db'),        # 数据库服务器地址，通常是 localhost
+        'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 
@@ -122,9 +128,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "zh-hans"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Shanghai"
 
 USE_I18N = True
 
@@ -135,8 +141,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = "/app/staticfiles"
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    os.path.join(BASE_DIR, 'static'),
 ]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

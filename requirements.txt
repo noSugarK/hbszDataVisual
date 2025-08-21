@@ -8,3 +8,5 @@ python-dateutil
 openpyxl
 pandas
 cryptography
+django==5.2.4
+pypinyin

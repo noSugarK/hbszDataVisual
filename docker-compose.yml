@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: hbsz-data-visual
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=0
+    depends_on:
+      - db
+    volumes:
+      - static_volume:/app/static
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: hbsz-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: hbsz
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  static_volume:
