@@ -22,6 +22,8 @@
 
 ## Docker部署
 
+### docker本地部署
+
 ```bash
 # 1. 进入项目目录
 cd hbszDataVisual
@@ -59,6 +61,20 @@ docker-compose exec web bash
 # 执行Django管理命令
 docker-compose exec web python manage.py <command>
 ```
+
+### docker云部署-腾讯云
+
+[云开发-环境总览](https://console.cloud.tencent.com/tcb/env/overview)
+
+#### 部署
+
+[腾讯云托管](https://tcb.cloud.tencent.com/dev?envId=cloud1-3gsvzht6bc32608a#/platform-run)
+
+选择使用公开git仓库部署
+
+#### 云数据库
+
+[腾讯云MySQL](https://tcb.cloud.tencent.com/dev?envId=cloud1-3gsvzht6bc32608a#/db/mysql/model/hbsz?sourceType=internal_mysql)
 
 ## 项目结构
 
