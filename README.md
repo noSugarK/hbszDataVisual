@@ -1,6 +1,6 @@
 ## 技术栈
 
-- 前端：bootstrap ，chart.js ，jquery
+- 前端：原生JavaScript结合bootstrap ，chart.js ，jquery
 - 后端：Django
 - 数据库：MySQL
 
@@ -19,6 +19,46 @@
 - [ ] 完成数据预测模块
 - [ ] 完成前端界面设计
 - [ ] 完成项目文档编写
+
+## Docker部署
+
+```bash
+# 1. 进入项目目录
+cd hbszDataVisual
+
+# 2. 构建并启动服务
+docker-compose up --build -d
+
+# 3. 等待服务启动完成（约1-2分钟）
+
+# 4. 执行数据库迁移
+docker-compose exec web python manage.py migrate
+
+# 5. 创建超级用户（可选）
+docker-compose exec web python manage.py createsuperuser
+
+# 6. 访问应用
+# 打开浏览器访问 http://localhost:8000
+```
+
+### 管理命令
+
+```bash
+# 重新构建服务
+docker-compose build
+
+# 重新构建特定服务
+docker-compose build web
+
+# 重启特定服务
+docker-compose restart web
+
+# 进入容器bash
+docker-compose exec web bash
+
+# 执行Django管理命令
+docker-compose exec web python manage.py <command>
+```
 
 ## 项目结构
 
