@@ -8,11 +8,27 @@ services:
       - "8000:8000"
     environment:
       - DEBUG=0
+      - MYSQL_ROOT_PASSWORD=123456
     depends_on:
       - db
     volumes:
       - static_volume:/app/static
     restart: unless-stopped
+    command: >
+      bash -c "
+        echo 'Waiting for database...' &&
+        until mysql -h db -u root -p$$MYSQL_ROOT_PASSWORD -e 'SELECT 1' >/dev/null 2>&1; do
+          sleep 2
+        done &&
+        echo 'Database ready. Running migrations...' &&
+        python manage.py makemigrations &&
+        python manage.py migrate --noinput &&
+        echo 'Creating superuser admin/admin...' &&
+        echo \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'admin')\" | python manage.py shell &&
+        echo 'Initialization complete.' &&
+        python manage.py collectstatic --noinput --verbosity=0 --clear &&
+        gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 hbszDataVisual.wsgi:application
+      "
 
   db:
     image: mysql:8.0
