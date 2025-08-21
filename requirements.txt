@@ -7,3 +7,4 @@ et-xmlfile
 python-dateutil
 openpyxl
 pandas
+cryptography
