@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}商品混凝土C30项目价格柱状图{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm p-4">
+                <h2 class="h4 mb-4">商品混凝土C30项目价格柱状图</h2>
+                
+                <div class="row mb-4 g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">选择日期</label>
+                        <input type="month" id="selected-month" class="form-control">
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button id="view-year-average" class="btn btn-secondary">查看全年平均数据</button>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="price-chart" height="600"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'chart.js-4.5.0/dist/chart.umd.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化月份选择器为当前月份
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    document.getElementById('selected-month').value = `${year}-${month}`;
+
+    // 绑定事件
+    document.getElementById('selected-month').addEventListener('change', updateChart);
+    document.getElementById('view-year-average').addEventListener('click', viewYearAverage);
+
+    // 初始化图表
+    updateChart();
+});
+
+let priceChart = null;
+
+// 查看全年平均数据
+function viewYearAverage() {
+    const selectedMonth = document.getElementById('selected-month').value;
+    if (!selectedMonth) {
+        alert('请选择月份以确定年份');
+        return;
+    }
+
+    const year = selectedMonth.split('-')[0];
+    // 传递 year 参数表示需要查看全年平均数据
+    fetch(`{% url "visual:chart_hnt_bar_data" %}?year=${year}`)
+        .then(response => response.json())
+        .then(data => renderChart(data, true))
+        .catch(error => {
+            console.error('获取图表数据失败:', error);
+            document.querySelector('.chart-container').innerHTML =
+                `<div class="text-center py-5 text-danger">获取数据失败: ${error.message}</div>`;
+        });
+}
+
+function updateChart() {
+    const selectedMonth = document.getElementById('selected-month').value;
+
+    fetch(`{% url "visual:chart_hnt_bar_data" %}?month=${selectedMonth}`)
+        .then(response => response.json())
+        .then(data => renderChart(data, false))
+        .catch(error => {
+            console.error('获取图表数据失败:', error);
+            document.querySelector('.chart-container').innerHTML =
+                `<div class="text-center py-5 text-danger">获取数据失败: ${error.message}</div>`;
+        });
+}
+
+function renderChart(chartData, isYearAverage = false) {
+    const ctx = document.getElementById('price-chart').getContext('2d');
+
+    // 如果已有图表，先销毁
+    if (priceChart) {
+        priceChart.destroy();
+    }
+
+    if (isYearAverage) {
+        renderYearAverageChart(ctx, chartData);
+    } else {
+        renderMonthlyChart(ctx, chartData);
+    }
+}
+
+function renderMonthlyChart(ctx, chartData) {
+    // 处理数据：按地区分组并排序
+    const groupedData = {};
+    chartData.project_data.forEach(item => {
+        if (!groupedData[item.region]) {
+            groupedData[item.region] = [];
+        }
+        groupedData[item.region].push(item);
+    });
+
+    // 按地区拼音排序
+    const sortedRegions = Object.keys(groupedData).sort();
+
+    // 重新组织数据，使同一地区的项目相邻
+    const sortedProjectData = [];
+    sortedRegions.forEach(region => {
+        groupedData[region].forEach(item => {
+            sortedProjectData.push(item);
+        });
+    });
+
+    // 生成标签和数据
+    const labels = sortedProjectData.map(item => `${item.name} (${item.region})`);
+    const projectPrices = sortedProjectData.map(item => item.price);
+
+    // 获取信息价数据
+    const referenceData = chartData.reference_price_data[0] || {};
+
+    // 为每个项目匹配对应地区的信息价
+    const referencePrices = sortedProjectData.map(item => referenceData[item.region] || null);
+
+    // 生成不同颜色
+    const colors = generateColors(sortedProjectData.length);
+
+    // 创建图表
+    priceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '项目月均单价',
+                    data: projectPrices,
+                    backgroundColor: colors,
+                    borderColor: colors.map(c => darkenColor(c)),
+                    borderWidth: 1,
+                    order: 3  // 最底层
+                },
+                {
+                    label: '信息价',
+                    data: referencePrices,
+                    type: 'line',
+                    borderColor: '#FF4D4F',
+                    backgroundColor: '#FF4D4F',
+                    borderWidth: 3,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#FF4D4F',
+                    pointBorderColor: '#333',
+                    pointBorderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    order: 1  // 最顶层
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: '单价'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderYearAverageChart(ctx, chartData) {
+    // 处理数据：按地区分组并排序
+    const groupedData = {};
+    chartData.project_data.forEach(item => {
+        if (!groupedData[item.region]) {
+            groupedData[item.region] = [];
+        }
+        groupedData[item.region].push(item);
+    });
+
+    // 按地区拼音排序
+    const sortedRegions = Object.keys(groupedData).sort();
+
+    // 重新组织数据，使同一地区的项目相邻
+    const sortedProjectData = [];
+    sortedRegions.forEach(region => {
+        groupedData[region].forEach(item => {
+            sortedProjectData.push(item);
+        });
+    });
+
+    // 生成标签和数据
+    const labels = sortedProjectData.map(item => `${item.name} (${item.region})`);
+    const projectPrices = sortedProjectData.map(item => item.price);
+
+    // 获取信息价数据（全年平均）
+    const referenceData = chartData.reference_price_data[0] || {};
+
+    // 为每个项目匹配对应地区的信息价
+    const referencePrices = sortedProjectData.map(item => referenceData[item.region] || null);
+
+    // 生成不同颜色
+    const colors = generateColors(sortedProjectData.length);
+
+    // 创建图表
+    priceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '项目全年均价',
+                    data: projectPrices,
+                    backgroundColor: colors,
+                    borderColor: colors.map(c => darkenColor(c)),
+                    borderWidth: 1,
+                    order: 3  // 最底层
+                },
+                {
+                    label: '信息价（全年平均）',
+                    data: referencePrices,
+                    type: 'line',
+                    borderColor: '#FF4D4F',
+                    backgroundColor: '#FF4D4F',
+                    borderWidth: 3,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#FF4D4F',
+                    pointBorderColor: '#333',
+                    pointBorderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    order: 1  // 最顶层
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: '单价'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function generateColors(count) {
+    const baseColors = [
+        '#0d6efd', '#198754', '#6610f2', '#fd7e14', '#dc3545',
+        '#20c997', '#0dcaf0', '#7b61ff', '#ff5722', '#eb2f96',
+        '#00b42a', '#8B4513', '#20B2AA', '#FF6347', '#4682B4',
+        '#BA55D3', '#F0E68C', '#8B0000', '#483D8B', '#008080'
+    ];
+    
+    const colors = [];
+    for (let i = 0; i < count; i++) {
+        colors.push(baseColors[i % baseColors.length]);
+    }
+    return colors;
+}
+
+function darkenColor(color) {
+    // 简单的颜色加深处理
+    return color.replace('#', '').match(/.{2}/g).map(hex => {
+        let value = parseInt(hex, 16);
+        value = Math.max(0, value - 30);
+        return value.toString(16).padStart(2, '0');
+    }).join('');
+}
+</script>
+{% endblock %}

@@ -20,8 +20,16 @@
                     </li>
 
                     {% if user.is_superuser or user.permission == 'admin' %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'visual:chart_hnt' %}">可视化图表</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            可视化图表
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'visual:chart_hnt_bar' %}">项目价格柱状图</a></li>
+                            <li><a class="dropdown-item" href="{% url 'visual:chart_hnt_line' %}">价格趋势折线图</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'visual:chart_hnt' %}">综合可视化图表</a></li>
+                        </ul>
                     </li>
                     {% endif %}
 
