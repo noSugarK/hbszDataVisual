@@ -10,6 +10,7 @@ from apps.projects.views import admin_required
 from apps.region.models import Region
 from apps.price.models import ConcretePrice
 from datetime import date
+import logging
 
 
 @admin_required
@@ -54,37 +55,45 @@ def chart_hnt_bar(request):
 def chart_hnt_bar_data(request):
     """
     获取柱状图数据：按地区分组的项目价格和信息价
+    修复：按月份匹配信息价（忽略具体日期），确保单月项目能关联当月信息价
     """
+    logger = logging.getLogger(__name__)
+
     month_str = request.GET.get('month')
     year_str = request.GET.get('year')
 
-    # 日期处理
+    # 日期范围处理
+    start_date = None
+    end_date = None
     if year_str:
-        # 全年平均数据
         try:
             year = int(year_str)
             start_date = date(year, 1, 1)
             end_date = date(year, 12, 31)
-        except:
-            start_date = end_date = None
+            logger.debug(f"全年查询：{year}年，日期范围：{start_date} 至 {end_date}")
+        except Exception as e:
+            logger.error(f"年份解析失败：{year_str}，错误：{str(e)}")
     elif month_str:
-        # 月份数据
         try:
             year, month = map(int, month_str.split('-'))
             start_date = date(year, month, 1)
             end_date = date(year, month, calendar.monthrange(year, month)[1])
-        except:
-            start_date = end_date = None
+            logger.debug(f"单月查询：{year}-{month}，日期范围：{start_date} 至 {end_date}")
+        except Exception as e:
+            logger.error(f"月份解析失败：{month_str}，错误：{str(e)}")
     else:
-        # 默认为当前月份
         today = date.today()
         start_date = date(today.year, today.month, 1)
         end_date = date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
+        logger.debug(f"默认查询：当前月 {today.year}-{today.month}")
 
     # 查询项目数据
     project_query = Project.objects.filter(
         specification__category__category_name='商品混凝土',
         specification__specification_name='C30'
+    ).annotate(
+        project_start=Min('arrival_date'),
+        project_end=Max('arrival_date')
     )
 
     if start_date and end_date:
@@ -92,6 +101,7 @@ def chart_hnt_bar_data(request):
             arrival_date__gte=start_date,
             arrival_date__lte=end_date
         )
+    logger.debug(f"符合条件的项目数量：{project_query.count()}")
 
     # 按项目分组计算平均价格
     project_query = project_query.extra(
@@ -99,60 +109,156 @@ def chart_hnt_bar_data(request):
     ).values(
         'project_mapping__project_name',
         'project_mapping__region__city',
-        'project_mapping__region__citypy'
+        'project_mapping__region__citypy',
+        'project_start',
+        'project_end'
     ).annotate(
         avg_price=Avg('unit_price')
     ).order_by('project_mapping__region__citypy', 'project_mapping__project_name')
 
+    # 获取信息价数据（按日期排序）
+    price_records = []
+    if start_date and end_date:
+        price_records = ConcretePrice.objects.filter(
+            date__gte=start_date,
+            date__lte=end_date
+        ).order_by('date')
+    else:
+        price_records = ConcretePrice.objects.all().order_by('date')
+    logger.debug(
+        f"查询到的信息价记录数量：{len(price_records)}，日期列表：{[r.date.strftime('%Y-%m-%d') for r in price_records]}")
+
     # 组织项目数据
     project_data = []
+    regions = {r.citypy: r for r in Region.objects.filter(district='')}
+
     for item in project_query:
-        if item['avg_price'] is not None:
-            project_data.append({
-                'name': item['project_mapping__project_name'],
-                'date': month_str or (year_str if year_str else start_date.strftime('%Y-%m')),
-                'price': float(item['avg_price']),
-                'region': item['project_mapping__region__city'],
-                'region_py': item['project_mapping__region__citypy']
-            })
+        if item['avg_price'] is None or not item['project_start'] or not item['project_end']:
+            continue
 
-    # 查询信息价数据
-    price_query = ConcretePrice.objects.all()
-    if start_date and end_date:
-        price_query = price_query.filter(date__gte=start_date, date__lte=end_date)
+        # 项目基础信息
+        project_name = item['project_mapping__project_name']
+        citypy = item['project_mapping__region__citypy']
+        region = regions.get(citypy)
+        project_start = item['project_start']
+        project_end = item['project_end']
+        project_info_price = None
 
-    # 根据是月数据还是年数据选择处理方式
-    if year_str:
-        # 全年平均信息价
-        prices = price_query
-    else:
-        # 月信息价
-        prices = price_query.first()
+        # 计算项目持续月数（用于判断是否单月项目）
+        months_duration = (project_end.year - project_start.year) * 12 + (project_end.month - project_start.month) + 1
+        logger.debug(f"\n项目：{project_name}，地区拼音：{citypy}，持续月数：{months_duration}")
+        logger.debug(f"项目时间段：{project_start.strftime('%Y-%m-%d')} 至 {project_end.strftime('%Y-%m-%d')}")
 
-    # 组织信息价数据
+        if region and citypy:
+            info_prices = []
+            for record in price_records:
+                # 核心修复：按月份匹配（忽略具体日期）
+                # 1. 提取项目和信息价的年月
+                project_year = project_start.year
+                project_month = project_start.month
+                record_year = record.date.year
+                record_month = record.date.month
+
+                # 2. 判断是否为同一月份（关键逻辑）
+                is_same_month = (project_year == record_year) and (project_month == record_month)
+
+                # 3. 对于多月项目：需信息价月份在项目起止月份范围内
+                if months_duration > 1:
+                    # 计算信息价月份是否在项目月份范围内
+                    project_end_year = project_end.year
+                    project_end_month = project_end.month
+                    is_in_range = (
+                                          (record_year > project_year) or
+                                          (record_year == project_year and record_month >= project_month)
+                                  ) and (
+                                          (record_year < project_end_year) or
+                                          (record_year == project_end_year and record_month <= project_end_month)
+                                  )
+                    is_date_match = is_in_range
+                else:
+                    # 单月项目：只需匹配月份
+                    is_date_match = is_same_month
+
+                if not is_date_match:
+                    logger.debug(f"  信息价 {record.date.strftime('%Y-%m')} 与项目月份不匹配，跳过")
+                    continue
+
+                # 检查地区字段是否存在且值有效
+                if not hasattr(record, citypy):
+                    logger.warning(f"  信息价记录无 {citypy} 字段，跳过")
+                    continue
+
+                price_value = getattr(record, citypy)
+                if price_value is None:
+                    logger.debug(f"  {citypy} 字段值为NULL，跳过")
+                    continue
+                if isinstance(price_value, (int, float)) and price_value < 0:
+                    logger.debug(f"  {citypy} 字段值为负数（{price_value}），跳过")
+                    continue
+
+                # 转换为数值并加入列表
+                try:
+                    price_value = float(price_value)
+                    info_prices.append(price_value)
+                    logger.debug(f"  有效信息价：{price_value}（{record.date.strftime('%Y-%m')}）")
+                except ValueError:
+                    logger.warning(f"  {citypy} 字段值格式无效（{price_value}），跳过")
+                    continue
+
+            # 计算信息价（单月取当月值，多月取平均）
+            if info_prices:
+                if months_duration == 1:
+                    project_info_price = round(info_prices[-1], 2)  # 单月取当月值（通常只有1条）
+                    logger.debug(f"  单月项目信息价：{project_info_price}")
+                else:
+                    project_info_price = round(sum(info_prices) / len(info_prices), 2)
+                    logger.debug(f"  多月项目平均信息价：{project_info_price}（共{len(info_prices)}条）")
+            else:
+                logger.warning(f"  未找到匹配的有效信息价")
+
+        # 加入项目数据列表
+        project_data.append({
+            'name': project_name,
+            'date': month_str or (year_str if year_str else start_date.strftime('%Y-%m')),
+            'price': float(item['avg_price']),
+            'region': item['project_mapping__region__city'],
+            'region_py': citypy,
+            'info_price': project_info_price,
+            'project_period': f"{project_start.strftime('%Y-%m')}至{project_end.strftime('%Y-%m')}",
+            'duration_months': months_duration
+        })
+
+    # 组织整体参考价数据
     reference_price_data = []
-    if year_str and prices:
-        # 计算全年平均信息价
-        entry = {'date': year_str}
-        # 获取所有城市的记录（district为空的记录）
-        regions = Region.objects.filter(district='').order_by('citypy')
-        for region in regions:
-            # 计算该地区全年的平均信息价
-            if hasattr(prices, region.citypy):
-                avg_price = getattr(prices, region.citypy)
-                if avg_price:
-                    entry[region.city] = float(avg_price)
-        reference_price_data.append(entry)
-    elif prices:
-        # 月信息价
-        month_key = prices.date.strftime('%Y-%m')
-        entry = {'date': month_key}
-        # 获取所有城市的记录（district为空的记录）
-        regions = Region.objects.filter(district='').order_by('citypy')
-        for region in regions:
-            if hasattr(prices, region.citypy):
-                entry[region.city] = float(getattr(prices, region.citypy) or 0)
-        reference_price_data.append(entry)
+    if start_date and end_date:
+        if year_str:
+            # 全年参考价：按地区计算每月平均
+            region_yearly_prices = {r.citypy: [] for r in regions.values()}
+            for record in price_records:
+                for citypy, region in regions.items():
+                    if hasattr(record, citypy):
+                        price_value = getattr(record, citypy)
+                        if price_value and isinstance(price_value, (int, float)) and price_value >= 0:
+                            region_yearly_prices[citypy].append(float(price_value))
+            entry = {'date': year_str}
+            for citypy, prices in region_yearly_prices.items():
+                if prices:
+                    entry[regions[citypy].city] = round(sum(prices) / len(prices), 2)
+            reference_price_data.append(entry)
+        else:
+            # 单月参考价：取当月平均值
+            region_monthly_prices = {r.citypy: [] for r in regions.values()}
+            for record in price_records:
+                for citypy, region in regions.items():
+                    if hasattr(record, citypy):
+                        price_value = getattr(record, citypy)
+                        if price_value and isinstance(price_value, (int, float)) and price_value >= 0:
+                            region_monthly_prices[citypy].append(float(price_value))
+            entry = {'date': start_date.strftime('%Y-%m')}
+            for citypy, prices in region_monthly_prices.items():
+                if prices:
+                    entry[regions[citypy].city] = round(sum(prices) / len(prices), 2)
+            reference_price_data.append(entry)
 
     return JsonResponse({
         'project_data': project_data,
