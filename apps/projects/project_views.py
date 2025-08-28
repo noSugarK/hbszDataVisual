@@ -3,7 +3,7 @@ import tempfile
 import pandas as pd
 
 from django.contrib import messages
-from django.db import transaction
+from django.db import transaction, models
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -13,258 +13,6 @@ from ..region.models import Region
 from ..supplier.models import Supplier
 from ..users.models import User
 from .forms import ProjectForm, ExcelUploadForm
-
-@login_required
-def project_excel(request):
-    """
-    上传Excel文件并导入项目数据
-    """
-    # 预览模式 - 显示工作表选项
-    if request.method == 'POST' and 'preview' in request.POST:
-        excel_file = request.FILES.get('excel_file')
-        if excel_file:
-            try:
-                # 创建临时文件来存储上传的Excel文件
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as tmp:
-                    for chunk in excel_file.chunks():
-                        tmp.write(chunk)
-                    tmp_path = tmp.name
-
-                try:
-                    # 获取工作表列表
-                    if excel_file.name.endswith('.xlsx'):
-                        engine = 'openpyxl'
-                    elif excel_file.name.endswith('.xls'):
-                        engine = 'xlrd'
-                    else:
-                        engine = None
-
-                    # 读取Excel文件中的所有工作表名称
-                    excel_file_obj = pd.ExcelFile(tmp_path, engine=engine)
-                    sheet_names = excel_file_obj.sheet_names
-
-                    # 创建表单并传递工作表选项，默认选择第一个工作表
-                    sheet_choices = [('', '使用第一个工作表（默认）')] + [(name, name) for name in sheet_names]
-                    form = ExcelUploadForm(sheet_choices=sheet_choices)
-                    form.fields['excel_file'].initial = excel_file
-
-                    # 保存临时文件路径到会话中
-                    request.session['excel_tmp_path'] = tmp_path
-                    request.session['excel_filename'] = excel_file.name
-
-                    return render(request, 'project_excel.html', {
-                        'form': form,
-                        'sheet_names': sheet_names,
-                        'preview_mode': True
-                    })
-
-                finally:
-                    # 保持临时文件以供后续使用
-                    pass
-
-            except Exception as e:
-                messages.error(request, f'读取Excel文件时发生错误: {str(e)}')
-                # 清理临时文件
-                if 'tmp_path' in locals():
-                    os.unlink(tmp_path)
-                form = ExcelUploadForm()
-        else:
-            form = ExcelUploadForm()
-
-    # 导入模式 - 实际导入数据
-    elif request.method == 'POST':
-        form = ExcelUploadForm(request.POST, request.FILES)
-        sheet_name = request.POST.get('sheet_name', '')
-
-        # 检查是否从会话中获取临时文件
-        tmp_path = request.session.get('excel_tmp_path')
-        excel_filename = request.session.get('excel_filename')
-
-        if tmp_path and os.path.exists(tmp_path):
-            try:
-                # 保存上传记录
-                data_upload = DataUpload.objects.create(
-                    user=request.user,
-                    file_path=excel_filename or 'unknown.xlsx',
-                    status='processing'
-                )
-
-                try:
-                    # 使用 pandas 读取临时文件，支持指定工作表
-                    excel_file_name = excel_filename or 'unknown.xlsx'
-                    if excel_file_name.endswith('.xlsx'):
-                        engine = 'openpyxl'
-                    elif excel_file_name.endswith('.xls'):
-                        engine = 'xlrd'
-                    else:
-                        engine = None  # 让pandas自动选择
-
-                    # 如果指定了工作表名称，则使用指定的工作表
-                    if sheet_name:
-                        df = pd.read_excel(tmp_path, sheet_name=sheet_name, engine=engine)
-                    else:
-                        # 否则使用第一个工作表
-                        df = pd.read_excel(tmp_path, engine=engine)
-
-                    # 验证必要的列是否存在
-                    required_columns = ['项目名称', '到货日期', '供应商', '物资类别', '规格', '数量', '单价（不含税）']
-                    missing_columns = [col for col in required_columns if col not in df.columns]
-
-                    if missing_columns:
-                        messages.error(request, f'Excel文件缺少必要的列: {", ".join(missing_columns)}')
-                        data_upload.status = 'failed'
-                        data_upload.save()
-                        # 清理会话数据
-                        if 'excel_tmp_path' in request.session:
-                            del request.session['excel_tmp_path']
-                        if 'excel_filename' in request.session:
-                            del request.session['excel_filename']
-                        return redirect('projects:project_excel')
-
-                    # 获取ID为1的默认地区
-                    try:
-                        default_region = Region.objects.get(id=1)
-                    except Region.DoesNotExist:
-                        messages.error(request, '系统中不存在ID为1的地区，请先创建默认地区')
-                        data_upload.status = 'failed'
-                        data_upload.save()
-                        # 清理会话数据
-                        if 'excel_tmp_path' in request.session:
-                            del request.session['excel_tmp_path']
-                        if 'excel_filename' in request.session:
-                            del request.session['excel_filename']
-                        return redirect('projects:project_excel')
-
-                    # 获取ID为1的默认品牌
-                    try:
-                        default_brand = Brand.objects.get(id=1)
-                    except Brand.DoesNotExist:
-                        messages.error(request, '系统中不存在ID为1的品牌，请先创建默认品牌')
-                        data_upload.status = 'failed'
-                        data_upload.save()
-                        # 清理会话数据
-                        if 'excel_tmp_path' in request.session:
-                            del request.session['excel_tmp_path']
-                        if 'excel_filename' in request.session:
-                            del request.session['excel_filename']
-                        return redirect('projects:project_excel')
-
-                    # 处理数据并保存到数据库
-                    success_count = 0
-                    error_messages = []
-
-                    with transaction.atomic():
-                        for index, row in df.iterrows():
-                            try:
-                                # 验证必要字段不为空
-                                if pd.isna(row['项目名称']) or pd.isna(row['到货日期']) or \
-                                        pd.isna(row['供应商']) or pd.isna(row['物资类别']) or \
-                                        pd.isna(row['规格']) or pd.isna(row['数量']) or \
-                                        pd.isna(row['单价（不含税）']):
-                                    raise ValueError("必要字段不能为空")
-
-                                # 处理项目映射
-                                project_name = str(row['项目名称']).strip()
-
-                                # 获取或创建项目映射，使用ID为1的地区作为默认地区
-                                project_mapping, created = ProjectMapping.objects.get_or_create(
-                                    project_name=project_name,
-                                    defaults={'region': default_region}
-                                )
-
-                                # 获取供应商
-                                supplier, created = Supplier.objects.get_or_create(
-                                    supplier_name=str(row['供应商']).strip()
-                                )
-
-                                # 获取物资类别
-                                category, created = MaterialCategory.objects.get_or_create(
-                                    category_name=str(row['物资类别']).strip()
-                                )
-
-                                # 获取规格
-                                specification, created = Specification.objects.get_or_create(
-                                    specification_name=str(row['规格']).strip(),
-                                    category=category
-                                )
-
-                                # 处理品牌 - 使用ID为1的品牌作为默认品牌
-                                brand = default_brand
-                                if '品牌' in row and pd.notna(row['品牌']) and str(row['品牌']).strip() not in ['/','']:
-                                    brand_name = str(row['品牌']).strip()
-                                    # 尝试查找现有品牌，如果不存在则创建新品牌
-                                    brand, created = Brand.objects.get_or_create(
-                                        brand_name=brand_name
-                                    )
-
-                                # 处理日期格式
-                                arrival_date = pd.to_datetime(row['到货日期'])
-
-                                # 处理数值字段
-                                try:
-                                    quantity = float(row['数量'])
-                                    unit_price = float(row['单价（不含税）'])
-                                    discount_rate = float(row.get('下浮率%', 0)) if pd.notna(
-                                        row.get('下浮率%', 0)) else 0
-                                except ValueError:
-                                    raise ValueError("数量、单价或下浮率格式不正确")
-
-                                # 创建项目
-                                Project.objects.create(
-                                    project_mapping=project_mapping,
-                                    arrival_date=arrival_date,
-                                    supplier=supplier,
-                                    category=category,
-                                    specification=specification,
-                                    quantity=quantity,
-                                    unit_price=unit_price,
-                                    discount_rate=discount_rate,
-                                    brand=brand,
-                                    user=request.user
-                                )
-                                success_count += 1
-
-                            except Exception as e:
-                                error_messages.append(f"第{index + 2}行数据导入失败: {str(e)}")  # +2因为索引从0开始，且第一行是标题行
-
-                    if error_messages:
-                        for error in error_messages:
-                            messages.warning(request, error)
-
-                    messages.success(request, f'成功导入 {success_count} 条数据')
-                    data_upload.status = 'completed'
-                    data_upload.save()
-
-                finally:
-                    # 删除临时文件
-                    os.unlink(tmp_path)
-                    # 清理会话数据
-                    if 'excel_tmp_path' in request.session:
-                        del request.session['excel_tmp_path']
-                    if 'excel_filename' in request.session:
-                        del request.session['excel_filename']
-
-            except Exception as e:
-                messages.error(request, f'导入过程中发生错误: {str(e)}')
-                data_upload.status = 'failed'
-                data_upload.save()
-                # 清理会话数据
-                if 'excel_tmp_path' in request.session:
-                    del request.session['excel_tmp_path']
-                if 'excel_filename' in request.session:
-                    del request.session['excel_filename']
-                # 删除临时文件
-                if os.path.exists(tmp_path):
-                    os.unlink(tmp_path)
-
-            return redirect('projects:project_list')
-        else:
-            messages.error(request, '文件信息丢失，请重新上传文件')
-            form = ExcelUploadForm()
-    else:
-        form = ExcelUploadForm()
-
-    return render(request, 'project_excel.html', {'form': form, 'preview_mode': False})
 
 @login_required
 def project_excel(request):
@@ -558,7 +306,7 @@ def project_add(request):
 @login_required
 def project_list(request):
     """
-    查看所有项目信息，添加筛选和搜索功能
+    查看所有项目信息，添加筛选、搜索和排序功能
     """
     # 获取基础查询集 - 根据用户权限决定展示范围
     projects_queryset = Project.objects.select_related(
@@ -590,6 +338,9 @@ def project_list(request):
     end_date = request.GET.get('end_date', '')
     # 异常值筛选参数
     anomaly_filter = request.GET.get('anomaly_filter', '')
+    # 排序参数
+    sort_by = request.GET.get('sort', 'arrival_date')  # 默认按到货日期排序
+    order = request.GET.get('order', 'desc')  # 默认降序
 
     # 应用搜索条件（全局搜索）
     if search_query:
@@ -666,6 +417,34 @@ def project_list(request):
     elif anomaly_filter == 'normal':
         projects_list = projects_list.filter(is_anomaly=False)
 
+    # 应用排序
+    # 定义允许排序的字段，防止SQL注入
+    allowed_sort_fields = {
+        'project_mapping__project_name': 'project_mapping__project_name',
+        'arrival_date': 'arrival_date',
+        'supplier__supplier_name': 'supplier__supplier_name',
+        'category__category_name': 'category__category_name',
+        'specification__specification_name': 'specification__specification_name',
+        'quantity': 'quantity',
+        'unit_price': 'unit_price',
+        'discount_rate': 'discount_rate',
+        'total_amount': 'total_amount',
+        'brand__brand_name': 'brand__brand_name',
+        'project_mapping__region': 'project_mapping__region',
+        'user__username': 'user__username'
+    }
+
+    # 验证排序字段是否允许
+    if sort_by in allowed_sort_fields:
+        sort_field = allowed_sort_fields[sort_by]
+        # 如果是降序，在字段前加负号
+        if order == 'desc':
+            sort_field = '-' + sort_field
+        projects_list = projects_list.order_by(sort_field)
+    else:
+        # 默认排序
+        projects_list = projects_list.order_by('-arrival_date')
+
     # 获取筛选选项数据 - 根据用户权限决定
     if request.user.is_superuser or request.user.permission == 'admin':
         # 管理员可以看到所有选项
@@ -726,6 +505,8 @@ def project_list(request):
         'start_date': start_date,
         'end_date': end_date,
         'anomaly_filter': anomaly_filter,
+        'sort_by': sort_by,
+        'order': order,
     })
 
 
@@ -834,11 +615,11 @@ def detect_anomalies(request):
 def is_anomaly(project, stats):
     """
     判断单个项目是否为异常值的函数
-    这个函数可以单独修改，不影响其他代码
+    使用更严格的3.0标准差阈值
 
     Args:
         project: Project对象
-        stats: 该城市该类别的统计信息，包含mean和std
+        stats: 该分组的统计信息，包含mean和std
 
     Returns:
         bool: True表示是异常值，False表示不是异常值
@@ -859,15 +640,15 @@ def is_anomaly(project, stats):
     mean_val = float(mean)
     std_val = float(std)
 
-    # 使用Z-Score方法，如果超过2个标准差则为异常值
+    # 使用Z-Score方法，如果超过3个标准差则为异常值（更严格的标准）
     z_score = abs(project_price - mean_val) / std_val
-    return z_score > 2.0
+    return z_score > 3.0
 
 
 @login_required
 def process_anomalies(request, city_name):
     """
-    处理特定城市的异常值检测
+    处理特定城市的异常值检测（按物资类别、规格和月份分组）
     """
     if not (request.user.is_superuser or request.user.permission == 'admin'):
         messages.error(request, '您没有权限执行此操作。')
@@ -879,22 +660,35 @@ def process_anomalies(request, city_name):
     # 获取该城市的所有项目
     projects = Project.objects.filter(project_mapping__region__in=regions)
 
-    # 按物资类别分组，计算每个类别的统计信息
+    # 按物资类别、规格和月份分组，计算每个分组的统计信息
     from django.db.models import Avg, StdDev
-    category_stats = projects.values('category__category_name').annotate(
+    category_stats = projects.values(
+        'category__category_name',
+        'specification__specification_name',
+        'arrival_date__year',
+        'arrival_date__month'
+    ).annotate(
         mean=Avg('unit_price'),
-        std=StdDev('unit_price')
-    )
+        std=StdDev('unit_price'),
+        count=models.Count('id')
+    ).filter(count__gt=1)  # 只考虑有2个以上数据点的分组
 
     # 创建统计信息字典
     stats_dict = {}
     for stat in category_stats:
         category_name = stat['category__category_name']
+        specification_name = stat['specification__specification_name']
+        year = stat['arrival_date__year']
+        month = stat['arrival_date__month']
+
+        # 使用复合键作为字典的键
+        key = (category_name, specification_name, year, month)
+
         # 确保统计数据有效
         mean_val = stat['mean'] if stat['mean'] is not None else 0
         std_val = stat['std'] if stat['std'] is not None else 0
 
-        stats_dict[category_name] = {
+        stats_dict[key] = {
             'mean': mean_val,
             'std': std_val
         }
@@ -906,8 +700,14 @@ def process_anomalies(request, city_name):
     anomaly_count = 0
     for project in projects:
         category_name = project.category.category_name
-        if category_name in stats_dict:
-            stats = stats_dict[category_name]
+        specification_name = project.specification.specification_name
+        year = project.arrival_date.year
+        month = project.arrival_date.month
+
+        # 使用相同的复合键查找统计信息
+        key = (category_name, specification_name, year, month)
+        if key in stats_dict:
+            stats = stats_dict[key]
             if is_anomaly(project, stats):
                 project.is_anomaly = True
                 project.save()
@@ -916,10 +716,11 @@ def process_anomalies(request, city_name):
     messages.success(request, f'在 {city_name} 城市检测到 {anomaly_count} 个异常值。')
     return redirect('projects:detect_anomalies')
 
+
 @login_required
 def process_selected_cities(request):
     """
-    处理选中城市的异常值检测
+    处理选中城市的异常值检测（按物资类别、规格和月份分组）
     """
     if not (request.user.is_superuser or request.user.permission == 'admin'):
         messages.error(request, '您没有权限执行此操作。')
@@ -946,22 +747,36 @@ def process_selected_cities(request):
                 # 获取该城市的所有项目
                 projects = Project.objects.filter(project_mapping__region__in=regions)
 
-                # 按物资类别分组，计算每个类别的统计信息
+                # 按物资类别、规格和月份分组，计算每个分组的统计信息
                 from django.db.models import Avg, StdDev
-                category_stats = projects.values('category__category_name').annotate(
+                import django.db.models as models
+                category_stats = projects.values(
+                    'category__category_name',
+                    'specification__specification_name',
+                    'arrival_date__year',
+                    'arrival_date__month'
+                ).annotate(
                     mean=Avg('unit_price'),
-                    std=StdDev('unit_price')
-                )
+                    std=StdDev('unit_price'),
+                    count=models.Count('id')
+                ).filter(count__gt=1)  # 只考虑有2个以上数据点的分组
 
                 # 创建统计信息字典
                 stats_dict = {}
                 for stat in category_stats:
                     category_name = stat['category__category_name']
+                    specification_name = stat['specification__specification_name']
+                    year = stat['arrival_date__year']
+                    month = stat['arrival_date__month']
+
+                    # 使用复合键作为字典的键
+                    key = (category_name, specification_name, year, month)
+
                     # 确保统计数据有效
                     mean_val = stat['mean'] if stat['mean'] is not None else 0
                     std_val = stat['std'] if stat['std'] is not None else 0
 
-                    stats_dict[category_name] = {
+                    stats_dict[key] = {
                         'mean': mean_val,
                         'std': std_val
                     }
@@ -973,8 +788,14 @@ def process_selected_cities(request):
                 anomaly_count = 0
                 for project in projects:
                     category_name = project.category.category_name
-                    if category_name in stats_dict:
-                        stats = stats_dict[category_name]
+                    specification_name = project.specification.specification_name
+                    year = project.arrival_date.year
+                    month = project.arrival_date.month
+
+                    # 使用相同的复合键查找统计信息
+                    key = (category_name, specification_name, year, month)
+                    if key in stats_dict:
+                        stats = stats_dict[key]
                         if is_anomaly(project, stats):
                             project.is_anomaly = True
                             project.save()

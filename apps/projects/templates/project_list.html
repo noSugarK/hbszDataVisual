@@ -39,18 +39,19 @@
                         <table class="table table-bordered table-striped table-hover">
                             <thead class="table-light">
                                 <tr>
-                                    <th>项目名称</th>
-                                    <th>到货日期</th>
-                                    <th>供应商</th>
-                                    <th>物资类别</th>
-                                    <th>规格</th>
-                                    <th>数量</th>
-                                    <th>单价</th>
-                                    <th>下浮率(%)</th>
-                                    <th>合计金额</th>
-                                    <th>品牌</th>
-                                    <th>地区</th>
-                                    <th>填报用户</th>
+                                    {% load projects_extras %}
+                                    <th>{% sortable_header "项目名称" "project_mapping__project_name" %}</th>
+                                    <th>{% sortable_header "到货日期" "arrival_date" %}</th>
+                                    <th>{% sortable_header "供应商" "supplier__supplier_name" %}</th>
+                                    <th>{% sortable_header "物资类别" "category__category_name" %}</th>
+                                    <th>{% sortable_header "规格" "specification__specification_name" %}</th>
+                                    <th>{% sortable_header "数量" "quantity" %}</th>
+                                    <th>{% sortable_header "单价" "unit_price" %}</th>
+                                    <th>{% sortable_header "下浮率(%)" "discount_rate" %}</th>
+                                    <th>{% sortable_header "合计金额" "total_amount" %}</th>
+                                    <th>{% sortable_header "品牌" "brand__brand_name" %}</th>
+                                    <th>{% sortable_header "地区" "project_mapping__region" %}</th>
+                                    <th>{% sortable_header "填报用户" "user__username" %}</th>
                                     <th>操作</th>
                                 </tr>
                             </thead>
