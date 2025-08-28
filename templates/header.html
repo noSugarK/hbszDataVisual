@@ -1,7 +1,7 @@
 <!-- templates/header.html -->
 <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
+        <div class="container">
             <a class="navbar-brand" href="{% url 'common:home' %}">
                 <i class="fas fa-chart-bar"></i> 数据可视化系统
             </a>
@@ -20,8 +20,14 @@
                     </li>
 
                     {% if user.is_superuser or user.permission == 'admin' %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'visual:chart_hnt' %}">可视化图表</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            可视化图表
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'visual:chart_hnt_bar' %}">项目价格柱状图</a></li>
+                            <li><a class="dropdown-item" href="{% url 'visual:chart_hnt_line' %}">价格趋势折线图</a></li>
+                        </ul>
                     </li>
                     {% endif %}
 
@@ -55,9 +61,10 @@
                             <li><a class="dropdown-item" href="{% url 'category:category_list' %}">物资类别</a></li>
                             <li><a class="dropdown-item" href="{% url 'specification:specification_list' %}">规格</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'price:price_list' %}">信息价</a></li>
                             {% endif %}
+                            <li><a class="dropdown-item" href="{% url 'price:price_list' %}">信息价</a></li>
                             <li><a class="dropdown-item" href="{% url 'price:price_chart' %}">信息价图表</a></li>
+                            <li><a class="dropdown-item" href="{% url 'price:price_predict_page' %}">价格预测</a></li>
                         </ul>
                     </li>
 
