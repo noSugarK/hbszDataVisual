@@ -1,17 +1,17 @@
 # apps/projects/urls.py
 from django.urls import path
-from . import views
+from . import views, project_views
 
 app_name = 'projects'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
-    path('add/', views.project_add, name='project_add'),
-    path('excel/', views.project_excel, name='project_excel'),
-    path('list/', views.project_list, name='project_list'),
-    path('<int:project_id>/', views.project_detail, name='project_detail'),
-    path('<int:project_id>/edit/', views.project_edit, name='project_edit'),
-    path('<int:project_id>/delete/', views.project_delete, name='project_delete'),
+    path('add/', project_views.project_add, name='project_add'),
+    path('excel/', project_views.project_excel, name='project_excel'),
+    path('list/', project_views.project_list, name='project_list'),
+    path('<int:project_id>/', project_views.project_detail, name='project_detail'),
+    path('<int:project_id>/edit/', project_views.project_edit, name='project_edit'),
+    path('<int:project_id>/delete/', project_views.project_delete, name='project_delete'),
     path('mapping/add/', views.project_mapping_add, name='project_mapping_add'),
     path('mapping/excel/', views.project_mapping_excel, name='project_mapping_excel'),
     path('mapping/list/', views.project_mapping_list, name='project_mapping_list'),
