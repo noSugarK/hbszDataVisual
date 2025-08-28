@@ -555,9 +555,6 @@ def project_add(request):
 
     return render(request, 'project_add.html', context)
 
-
-# 在 project_list 函数中添加异常值筛选逻辑
-
 @login_required
 def project_list(request):
     """
@@ -586,11 +583,12 @@ def project_list(request):
     category_filter = request.GET.get('category', '')
     specification_filter = request.GET.get('specification', '')
     brand_filter = request.GET.get('brand', '')
-    region_filter = request.GET.get('region', '')
+    city_filter = request.GET.get('city', '')  # 城市筛选
+    district_filter = request.GET.get('district', '')  # 区县筛选
     user_filter = request.GET.get('user', '')
     start_date = request.GET.get('start_date', '')
     end_date = request.GET.get('end_date', '')
-    # 新增异常值筛选参数
+    # 异常值筛选参数
     anomaly_filter = request.GET.get('anomaly_filter', '')
 
     # 应用搜索条件（全局搜索）
@@ -632,10 +630,18 @@ def project_list(request):
             brand__brand_name=brand_filter
         )
 
-    if region_filter:
+    # 地区筛选逻辑改进
+    if city_filter:
+        # 如果选择了城市，则筛选该城市的所有项目（包括所有区县）
         projects_list = projects_list.filter(
-            project_mapping__region__id=region_filter
+            project_mapping__region__city=city_filter
         )
+
+        # 如果还选择了具体的区县，则进一步筛选
+        if district_filter:
+            projects_list = projects_list.filter(
+                project_mapping__region__district=district_filter
+            )
 
     if user_filter:
         # 管理员可以按用户筛选，普通用户只能看到自己的数据，不需要按用户筛选
@@ -667,7 +673,7 @@ def project_list(request):
         suppliers = Supplier.objects.values_list('supplier_name', flat=True).distinct()
         categories = MaterialCategory.objects.values_list('category_name', flat=True).distinct()
         brands = Brand.objects.values_list('brand_name', flat=True).distinct()
-        regions = Region.objects.all()
+        cities = Region.objects.values_list('city', flat=True).distinct()
         users = User.objects.values_list('username', flat=True).distinct()
     else:
         # 普通用户只能看到与自己相关的选项
@@ -676,10 +682,18 @@ def project_list(request):
         suppliers = user_projects.values_list('supplier__supplier_name', flat=True).distinct()
         categories = user_projects.values_list('category__category_name', flat=True).distinct()
         brands = user_projects.values_list('brand__brand_name', flat=True).distinct()
-        regions = Region.objects.filter(
+        cities = Region.objects.filter(
             projectmapping__project__user=request.user
-        ).distinct()
+        ).values_list('city', flat=True).distinct()
         users = [request.user.username]  # 普通用户只能看到自己
+
+    # 根据当前选择的城市获取区县选项
+    if city_filter:
+        districts = Region.objects.filter(city=city_filter).values_list('district', flat=True).distinct()
+        # 过滤掉空值
+        districts = [d for d in districts if d]
+    else:
+        districts = []
 
     specifications = Specification.objects.select_related('category')
 
@@ -696,7 +710,8 @@ def project_list(request):
         'suppliers': suppliers,
         'categories': categories,
         'brands': brands,
-        'regions': regions,
+        'cities': cities,
+        'districts': districts,
         'users': users,
         'specifications': specifications,
         'search_query': search_query,
@@ -705,7 +720,8 @@ def project_list(request):
         'category_filter': category_filter,
         'specification_filter': specification_filter,
         'brand_filter': brand_filter,
-        'region_filter': region_filter,
+        'city_filter': city_filter,
+        'district_filter': district_filter,
         'user_filter': user_filter,
         'start_date': start_date,
         'end_date': end_date,

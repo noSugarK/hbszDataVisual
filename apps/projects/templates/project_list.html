@@ -252,13 +252,26 @@
                 </select>
             </div>
 
+            <!-- 地区筛选 -->
             <div class="mb-3">
-                <label class="form-label">地区</label>
-                <select class="form-select form-select-sm" name="region">
-                    <option value="">全部地区</option>
-                    {% for region in regions %}
-                        <option value="{{ region.id }}" {% if region_filter == region.id|stringformat:"i" %}selected{% endif %}>
-                            {{ region }}
+                <label class="form-label">城市</label>
+                <select class="form-select form-select-sm" name="city" id="citySelect">
+                    <option value="">全部城市</option>
+                    {% for city in cities %}
+                        <option value="{{ city }}" {% if city_filter == city %}selected{% endif %}>
+                            {{ city }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">区县</label>
+                <select class="form-select form-select-sm" name="district" id="districtSelect">
+                    <option value="">全部区县</option>
+                    {% for district in districts %}
+                        <option value="{{ district }}" {% if district_filter == district %}selected{% endif %}>
+                            {{ district }}
                         </option>
                     {% endfor %}
                 </select>
@@ -354,6 +367,37 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 // 如果没有选择类别，清空规格选项
                 specificationSelect.innerHTML = '<option value="">全部规格</option>';
+            }
+        });
+    }
+
+    // 城市变化时更新区县选项
+    const citySelect = document.getElementById('citySelect');
+    const districtSelect = document.getElementById('districtSelect');
+
+    if (citySelect) {
+        citySelect.addEventListener('change', function() {
+            const city = this.value;
+            if (city) {
+                // 发送AJAX请求获取对应区县
+                fetch(`/projects/get_districts/?city=${encodeURIComponent(city)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // 清空现有选项
+                        districtSelect.innerHTML = '<option value="">全部区县</option>';
+
+                        // 添加新选项
+                        data.districts.forEach(district => {
+                            const option = document.createElement('option');
+                            option.value = district.name;
+                            option.textContent = district.name;
+                            districtSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error:', error));
+            } else {
+                // 如果没有选择城市，清空区县选项
+                districtSelect.innerHTML = '<option value="">全部区县</option>';
             }
         });
     }
