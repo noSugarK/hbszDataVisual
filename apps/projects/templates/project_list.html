@@ -56,7 +56,7 @@
                             </thead>
                             <tbody>
                                 {% for project in projects %}
-                                <tr>
+                                <tr {% if project.is_anomaly %}class="table-danger"{% endif %}>
                                     <td>
                                         {% if project.project_mapping %}
                                             {{ project.project_mapping.project_name }}
@@ -261,6 +261,16 @@
                             {{ region }}
                         </option>
                     {% endfor %}
+                </select>
+            </div>
+
+            <!-- 新增异常值筛选条件 -->
+            <div class="mb-3">
+                <label class="form-label">异常值筛选</label>
+                <select class="form-select form-select-sm" name="anomaly_filter">
+                    <option value="">全部数据</option>
+                    <option value="anomaly" {% if anomaly_filter == 'anomaly' %}selected{% endif %}>仅显示异常值</option>
+                    <option value="normal" {% if anomaly_filter == 'normal' %}selected{% endif %}>仅显示正常值</option>
                 </select>
             </div>
 

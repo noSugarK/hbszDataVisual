@@ -41,7 +41,8 @@
                             <li><hr class="dropdown-divider"></li>
                             <!-- 只有管理员才能管理项目映射 -->
                             {% if user.is_superuser or user.permission == 'admin' %}
-                            <li><a class="dropdown-item" href="{% url 'projects:project_mapping_add' %}">添加项目映射</a></li>
+                                <li><a class="dropdown-item" href="{% url 'projects:detect_anomalies' %}">异常值检测</a></li>
+                                <li><a class="dropdown-item" href="{% url 'projects:project_mapping_add' %}">添加项目映射</a></li>
                             {% endif %}
                             <li><a class="dropdown-item" href="{% url 'projects:project_mapping_list' %}">项目映射列表</a></li>
                         </ul>

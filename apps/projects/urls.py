@@ -21,4 +21,7 @@ urlpatterns = [
     path('api/districts/', views.get_districts, name='get_districts'),
     path('api/project-mapping-info/', views.get_project_mapping_info, name='get_project_mapping_info'),
     path('api/specifications/', views.get_specifications, name='get_specifications'),
+    path('detect-anomalies/', project_views.detect_anomalies, name='detect_anomalies'),
+    path('process-anomalies/<str:city_name>/', project_views.process_anomalies, name='process_anomalies'),
+    path('process-selected-cities/', project_views.process_selected_cities, name='process_selected_cities'),
 ]

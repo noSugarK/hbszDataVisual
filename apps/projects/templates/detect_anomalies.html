@@ -1,0 +1,125 @@
+<!-- apps/projects/templates/detect_anomalies.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">异常值检测</h3>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'projects:process_selected_cities' %}">
+                        {% csrf_token %}
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <h5><i class="fas fa-info-circle"></i> 操作说明</h5>
+                                    <p class="mb-0">
+                                        请选择需要进行异常值检测的城市，可以单选或多选。
+                                        选中所有城市可实现一键处理全部城市数据。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h5 class="card-title mb-0">
+                                                <i class="fas fa-city"></i> 城市选择
+                                            </h5>
+                                            <div>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" id="selectAll">
+                                                    <i class="fas fa-check-square"></i> 全选
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAll">
+                                                    <i class="fas fa-square"></i> 取消全选
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if cities %}
+                                            <div class="row">
+                                                {% for city in cities %}
+                                                <div class="col-md-3 col-sm-4 col-6 mb-2">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input city-checkbox"
+                                                               type="checkbox"
+                                                               name="selected_cities"
+                                                               value="{{ city }}"
+                                                               id="city_{{ forloop.counter }}">
+                                                        <label class="form-check-label" for="city_{{ forloop.counter }}">
+                                                            {{ city }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle"></i> 暂无城市数据。
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> 返回项目列表
+                                    </a>
+                                    <button type="submit" class="btn btn-success"
+                                            {% if not cities %}disabled{% endif %}
+                                            onclick="return confirm('确定要对选中的城市进行异常值检测吗？')">
+                                        <i class="fas fa-play-circle"></i> 开始处理选中城市
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllBtn = document.getElementById('selectAll');
+    const deselectAllBtn = document.getElementById('deselectAll');
+    const checkboxes = document.querySelectorAll('.city-checkbox');
+
+    // 全选功能
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        });
+    }
+
+    // 取消全选功能
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', function() {
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

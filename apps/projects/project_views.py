@@ -556,6 +556,8 @@ def project_add(request):
     return render(request, 'project_add.html', context)
 
 
+# 在 project_list 函数中添加异常值筛选逻辑
+
 @login_required
 def project_list(request):
     """
@@ -588,6 +590,8 @@ def project_list(request):
     user_filter = request.GET.get('user', '')
     start_date = request.GET.get('start_date', '')
     end_date = request.GET.get('end_date', '')
+    # 新增异常值筛选参数
+    anomaly_filter = request.GET.get('anomaly_filter', '')
 
     # 应用搜索条件（全局搜索）
     if search_query:
@@ -650,6 +654,12 @@ def project_list(request):
             arrival_date__lte=end_date
         )
 
+    # 新增异常值筛选逻辑
+    if anomaly_filter == 'anomaly':
+        projects_list = projects_list.filter(is_anomaly=True)
+    elif anomaly_filter == 'normal':
+        projects_list = projects_list.filter(is_anomaly=False)
+
     # 获取筛选选项数据 - 根据用户权限决定
     if request.user.is_superuser or request.user.permission == 'admin':
         # 管理员可以看到所有选项
@@ -699,6 +709,7 @@ def project_list(request):
         'user_filter': user_filter,
         'start_date': start_date,
         'end_date': end_date,
+        'anomaly_filter': anomaly_filter,
     })
 
 
@@ -783,3 +794,184 @@ def project_delete(request, project_id):
         'title': '删除项目'
     }
     return render(request, 'project_delete.html', context)
+
+@login_required
+def detect_anomalies(request):
+    """
+    检测项目数据中的异常值
+    """
+    if not (request.user.is_superuser or request.user.permission == 'admin'):
+        messages.error(request, '您没有权限执行此操作。')
+        return redirect('projects:project_list')
+
+    # 获取所有城市（按city字段分组）
+    cities = Region.objects.values_list('city', flat=True).distinct().order_by('city')
+
+    context = {
+        'cities': cities,
+        'title': '异常值检测'
+    }
+
+    return render(request, 'detect_anomalies.html', context)
+
+
+def is_anomaly(project, stats):
+    """
+    判断单个项目是否为异常值的函数
+    这个函数可以单独修改，不影响其他代码
+
+    Args:
+        project: Project对象
+        stats: 该城市该类别的统计信息，包含mean和std
+
+    Returns:
+        bool: True表示是异常值，False表示不是异常值
+    """
+    # 确保统计数据有效
+    if 'mean' not in stats or 'std' not in stats:
+        return False
+
+    mean = stats['mean']
+    std = stats['std']
+
+    # 如果标准差为0或无效，无法判断异常值
+    if std is None or float(std) == 0:
+        return False
+
+    # 将所有值转换为float类型进行计算
+    project_price = float(project.unit_price)
+    mean_val = float(mean)
+    std_val = float(std)
+
+    # 使用Z-Score方法，如果超过2个标准差则为异常值
+    z_score = abs(project_price - mean_val) / std_val
+    return z_score > 2.0
+
+
+@login_required
+def process_anomalies(request, city_name):
+    """
+    处理特定城市的异常值检测
+    """
+    if not (request.user.is_superuser or request.user.permission == 'admin'):
+        messages.error(request, '您没有权限执行此操作。')
+        return redirect('projects:project_list')
+
+    # 获取该城市的所有地区
+    regions = Region.objects.filter(city=city_name)
+
+    # 获取该城市的所有项目
+    projects = Project.objects.filter(project_mapping__region__in=regions)
+
+    # 按物资类别分组，计算每个类别的统计信息
+    from django.db.models import Avg, StdDev
+    category_stats = projects.values('category__category_name').annotate(
+        mean=Avg('unit_price'),
+        std=StdDev('unit_price')
+    )
+
+    # 创建统计信息字典
+    stats_dict = {}
+    for stat in category_stats:
+        category_name = stat['category__category_name']
+        # 确保统计数据有效
+        mean_val = stat['mean'] if stat['mean'] is not None else 0
+        std_val = stat['std'] if stat['std'] is not None else 0
+
+        stats_dict[category_name] = {
+            'mean': mean_val,
+            'std': std_val
+        }
+
+    # 重置所有项目的异常标记
+    projects.update(is_anomaly=False)
+
+    # 检测异常值
+    anomaly_count = 0
+    for project in projects:
+        category_name = project.category.category_name
+        if category_name in stats_dict:
+            stats = stats_dict[category_name]
+            if is_anomaly(project, stats):
+                project.is_anomaly = True
+                project.save()
+                anomaly_count += 1
+
+    messages.success(request, f'在 {city_name} 城市检测到 {anomaly_count} 个异常值。')
+    return redirect('projects:detect_anomalies')
+
+@login_required
+def process_selected_cities(request):
+    """
+    处理选中城市的异常值检测
+    """
+    if not (request.user.is_superuser or request.user.permission == 'admin'):
+        messages.error(request, '您没有权限执行此操作。')
+        return redirect('projects:project_list')
+
+    if request.method == 'POST':
+        # 获取选中的城市
+        selected_cities = request.POST.getlist('selected_cities')
+
+        if not selected_cities:
+            messages.warning(request, '请至少选择一个城市进行处理。')
+            return redirect('projects:detect_anomalies')
+
+        # 统计信息
+        total_anomaly_count = 0
+        processed_cities = 0
+
+        # 处理每个选中的城市
+        for city_name in selected_cities:
+            try:
+                # 获取该城市的所有地区
+                regions = Region.objects.filter(city=city_name)
+
+                # 获取该城市的所有项目
+                projects = Project.objects.filter(project_mapping__region__in=regions)
+
+                # 按物资类别分组，计算每个类别的统计信息
+                from django.db.models import Avg, StdDev
+                category_stats = projects.values('category__category_name').annotate(
+                    mean=Avg('unit_price'),
+                    std=StdDev('unit_price')
+                )
+
+                # 创建统计信息字典
+                stats_dict = {}
+                for stat in category_stats:
+                    category_name = stat['category__category_name']
+                    # 确保统计数据有效
+                    mean_val = stat['mean'] if stat['mean'] is not None else 0
+                    std_val = stat['std'] if stat['std'] is not None else 0
+
+                    stats_dict[category_name] = {
+                        'mean': mean_val,
+                        'std': std_val
+                    }
+
+                # 重置该城市所有项目的异常标记
+                projects.update(is_anomaly=False)
+
+                # 检测该城市的异常值
+                anomaly_count = 0
+                for project in projects:
+                    category_name = project.category.category_name
+                    if category_name in stats_dict:
+                        stats = stats_dict[category_name]
+                        if is_anomaly(project, stats):
+                            project.is_anomaly = True
+                            project.save()
+                            anomaly_count += 1
+
+                total_anomaly_count += anomaly_count
+                processed_cities += 1
+
+            except Exception as e:
+                messages.warning(request, f'处理城市 {city_name} 时发生错误: {str(e)}')
+                continue
+
+        messages.success(request,
+                         f'已完成选中城市的异常值检测，共处理 {processed_cities} 个城市，检测到 {total_anomaly_count} 个异常值。')
+
+    return redirect('projects:detect_anomalies')
