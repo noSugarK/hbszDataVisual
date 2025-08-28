@@ -40,6 +40,7 @@ class Project(models.Model):
     total_amount = models.DecimalField('合计', max_digits=15, decimal_places=2, blank=True, null=True)
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, verbose_name='品牌')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='填报用户')
+    is_anomaly = models.BooleanField('是否异常', default=False)
 
     class Meta:
         db_table = 'PROJECT'
