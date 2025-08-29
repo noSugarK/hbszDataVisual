@@ -191,6 +191,11 @@
             color: #2563eb;
         }
 
+        .metric-trend {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #059669;
+        }
+
         .chart-container {
             width: 100%;
             height: 500px;
@@ -400,9 +405,9 @@
                     return;
                 }
 
-                // 显示 RMSE
+                // 显示 RMSE 和趋势吻合度
                 rmseInfo.className = 'rmse-info success';
-                rmseInfo.innerHTML = `<i class="fas fa-check-circle"></i> 预测完成！RMSE: ${data.data[selectedCity].rmse}`;
+                rmseInfo.innerHTML = `<i class="fas fa-check-circle"></i> 预测完成！RMSE: ${data.data[selectedCity].rmse} | 趋势吻合度: ${data.trend_accuracy}%`;
 
                 // 动态生成图表
                 const city = selectedCity;
@@ -417,6 +422,7 @@
                         <h3 class="chart-title">${displayName} 混凝土价格趋势与预测</h3>
                         <div class="chart-meta">
                             <span class="metric-badge metric-rmse">RMSE: ${result.rmse}</span>
+                            <span class="metric-badge metric-trend">趋势吻合度: ${data.trend_accuracy}%</span>
                         </div>
                     </div>
                     <div class="chart-container">

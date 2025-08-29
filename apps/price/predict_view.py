@@ -92,7 +92,7 @@ def price_predict_api(request):
         df = df[
             (df[selected_city] >= price_mean - 3 * price_std) &
             (df[selected_city] <= price_mean + 3 * price_std)
-        ]  # 移除异常值
+            ]  # 移除异常值
         df = df.sort_values('date').drop_duplicates(subset=['date'], keep='last').reset_index(drop=True)  # 去重排序
 
         print(f"📊 [数据加载] 加载 {selected_city} 价格数据 | 原始记录: {len(qs)} | 清洗后: {len(df)}")
@@ -144,14 +144,14 @@ def price_predict_api(request):
                     enforce_stationarity=False,
                     enforce_invertibility=False
                 )
-            fitted_model_train = model_train.fit(disp=False)
+            fitted_model_train = model_train.fit()
             print(f"  ✅ 第一次训练完成（{model_type}，训练集）")
         except Exception as model_err:
             # 降级为简单ARIMA模型重试
             print(f"  ⚠️  第一次训练失败: {str(model_err)}，降级为简单ARIMA模型")
             model_type = 'ARIMA'  # 强制切换为ARIMA
             model_train = ARIMA(train_prices, order=(1, 1, 0), enforce_stationarity=False)
-            fitted_model_train = model_train.fit(disp=False)
+            fitted_model_train = model_train.fit()
             print(f"  ✅ 第一次训练完成（降级ARIMA，训练集）")
 
         # 5. 模型效果检验：用训练集模型预测测试集，计算RMSE
@@ -159,6 +159,7 @@ def price_predict_api(request):
             start=len(train_prices),
             end=len(train_prices) + len(test_prices) - 1
         )
+
         # 平滑测试集预测结果（避免异常波动）
         def smooth_predictions(actuals, predictions, max_change_rate=0.15):
             """平滑预测值：变化率不超过15%（符合建材价格稳定性）"""
@@ -176,7 +177,33 @@ def price_predict_api(request):
 
         test_pred_smoothed = smooth_predictions(train_prices, test_pred)
         rmse = sqrt(mean_squared_error(test_prices, test_pred_smoothed))
-        print(f"  📊 模型检验 | RMSE: {rmse:.2f} | 平均价格: {np.mean(prices):.2f}")
+
+        # 计算趋势吻合度
+        def calculate_trend_accuracy(actual_values, predicted_values):
+            """
+            计算趋势吻合度
+            通过比较实际值和预测值的变化方向来计算趋势准确性
+            """
+            if len(actual_values) < 2 or len(predicted_values) < 2:
+                return 0
+
+            actual_directions = []
+            predicted_directions = []
+
+            for i in range(1, min(len(actual_values), len(predicted_values))):
+                actual_directions.append(1 if actual_values[i] > actual_values[i - 1] else
+                                         -1 if actual_values[i] < actual_values[i - 1] else 0)
+                predicted_directions.append(1 if predicted_values[i] > predicted_values[i - 1] else
+                                            -1 if predicted_values[i] < predicted_values[i - 1] else 0)
+
+            # 计算方向匹配的比例
+            matches = sum(1 for a, p in zip(actual_directions, predicted_directions) if a == p)
+            trend_accuracy = matches / len(actual_directions) * 100 if actual_directions else 0
+
+            return round(trend_accuracy, 2)
+
+        trend_accuracy = calculate_trend_accuracy(test_prices, test_pred_smoothed)
+        print(f"  📊 模型检验 | RMSE: {rmse:.2f} | 趋势吻合度: {trend_accuracy:.2f}% | 平均价格: {np.mean(prices):.2f}")
 
         # 6. 第二次训练：用全量数据拟合模型（用于最终未来预测）
         fitted_model_full = None
@@ -244,21 +271,24 @@ def price_predict_api(request):
             selected_city: {
                 'history': history_data,
                 'test_pred': test_pred_data,  # 模型检验用的测试预测
-                'forecast': forecast_data,    # 全量模型生成的最终预测
-                'rmse': round(rmse, 2),       # 模型检验的RMSE
+                'forecast': forecast_data,  # 全量模型生成的最终预测
+                'rmse': round(rmse, 2),  # 模型检验的RMSE
+                'trend_accuracy': trend_accuracy,  # 趋势吻合度
                 'avg_price': round(np.mean(prices), 2),
                 'data_points': total_points,
-                'model_used': model_type      # 两次训练统一的模型类型
+                'model_used': model_type  # 两次训练统一的模型类型
             }
         }
 
-        print(f"🎯 [预测完成] {CITY_NAME_MAP.get(selected_city, selected_city)} 预测成功 | 模型: {model_type} | RMSE: {rmse:.2f}")
+        print(
+            f"🎯 [预测完成] {CITY_NAME_MAP.get(selected_city, selected_city)} 预测成功 | 模型: {model_type} | RMSE: {rmse:.2f} | 趋势吻合度: {trend_accuracy:.2f}%")
 
         return JsonResponse({
             'success': True,
             'data': result,
             'city_name': CITY_NAME_MAP.get(selected_city, selected_city),
-            'avg_rmse': round(rmse, 2)
+            'avg_rmse': round(rmse, 2),
+            'trend_accuracy': trend_accuracy
         })
 
     except Exception as e:
