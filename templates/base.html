@@ -19,7 +19,10 @@
     <div class="wrapper">
         <!-- 页头 -->
         {% include 'header.html' %}
+
+        {% if user.is_superuser or user.permission == 'admin' %}
         {% include 'agent.html' %}
+        {% endif %}
 
         <!-- 主要内容 -->
         <main class="container-fluid mt-4">
