@@ -1,4 +1,3 @@
-# apps/price/views.py
 from datetime import timedelta, date
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -309,22 +308,27 @@ def price_delete(request, price_id):
 @login_required
 def price_chart(request):
     """信息价图表展示"""
-    # 获取所有城市拼音和名称
-    regions = Region.objects.filter(district='').order_by('city')
+    # 获取所有城市拼音和名称，排除神农架
+    regions = Region.objects.filter(district='').exclude(citypy='shennongjia').order_by('city')
 
     # 获取选中的城市（支持多选）
     cities_param = request.GET.get('cities', '')
     selected_cities = []
     if cities_param:
         selected_cities = cities_param.split(',')
+    else:
+        # 默认选中武汉
+        selected_cities = ['wuhan']
 
     # 获取时间范围参数
-    time_range = request.GET.get('time_range', '3m')  # 默认最近三个月
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
 
     context = {
         'regions': regions,
-        'selected_cities': selected_cities,  # 这里传递列表
-        'time_range': time_range,
+        'selected_cities': selected_cities,
+        'start_date': start_date,
+        'end_date': end_date,
         'title': '混凝土信息价图表'
     }
     return render(request, 'price_chart.html', context)
@@ -332,13 +336,13 @@ def price_chart(request):
 @login_required
 def price_chart_data(request):
     """获取图表数据"""
-    cities_param = request.GET.get('cities', '')
-    time_range = request.GET.get('time_range', '3m')
+    # 修改这里：使用 getlist 来获取所有同名参数
+    selected_cities = request.GET.getlist('cities', [])
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
 
-    if not cities_param:
+    if not selected_cities:
         return JsonResponse({'error': '请选择至少一个城市'})
-
-    selected_cities = cities_param.split(',')
 
     # 根据城市拼音查找对应字段和中文名称
     city_info_map = {
@@ -380,16 +384,44 @@ def price_chart_data(request):
         prices_queryset = ConcretePrice.objects.filter(query)
 
         # 根据时间范围过滤数据
-        if time_range != 'all':
-            end_date = timezone.now().date()
-            if time_range == '3m':
-                start_date = end_date - timedelta(days=90)
-            elif time_range == '1y':
-                start_date = end_date - timedelta(days=365)
-            elif time_range == '2y':
-                start_date = end_date - timedelta(days=730)
+        if start_date and end_date:
+            try:
+                # 解析年月格式（例如：2023-05）
+                start_year, start_month = map(int, start_date.split('-'))
+                end_year, end_month = map(int, end_date.split('-'))
 
-            prices_queryset = prices_queryset.filter(date__gte=start_date)
+                # 设置为该月第一天
+                from datetime import date
+                start_date_obj = date(start_year, start_month, 1)
+
+                # 设置结束日期为该月最后一天
+                if end_month == 12:
+                    end_date_obj = date(end_year, 12, 31)
+                else:
+                    end_date_obj = date(end_year, end_month + 1, 1) - timedelta(days=1)
+
+                prices_queryset = prices_queryset.filter(date__gte=start_date_obj, date__lte=end_date_obj)
+            except ValueError:
+                return JsonResponse({'error': '日期格式不正确'})
+        elif start_date:
+            try:
+                # 只有开始日期，查询该月及之后的数据
+                start_year, start_month = map(int, start_date.split('-'))
+                start_date_obj = date(start_year, start_month, 1)
+                prices_queryset = prices_queryset.filter(date__gte=start_date_obj)
+            except ValueError:
+                return JsonResponse({'error': '日期格式不正确'})
+        elif end_date:
+            try:
+                # 只有结束日期，查询该月及之前的数据
+                end_year, end_month = map(int, end_date.split('-'))
+                if end_month == 12:
+                    end_date_obj = date(end_year, 12, 31)
+                else:
+                    end_date_obj = date(end_year, end_month + 1, 1) - timedelta(days=1)
+                prices_queryset = prices_queryset.filter(date__lte=end_date_obj)
+            except ValueError:
+                return JsonResponse({'error': '日期格式不正确'})
 
         prices = prices_queryset.order_by('date')
 

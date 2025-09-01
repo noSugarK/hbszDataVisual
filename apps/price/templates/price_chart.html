@@ -1,4 +1,3 @@
-<!-- templates/price_chart.html -->
 {% extends 'base.html' %}
 
 {% load static %}
@@ -22,58 +21,52 @@
                         <div class="row mb-4">
                             <div class="col-12">
                                 <h5>选择城市</h5>
+                                <div class="mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="select-all-cities">全选</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all-cities">取消全选</button>
+                                </div>
                                 <div class="city-checkboxes">
                                     {% for region in regions %}
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="checkbox"
-                                               name="cities"
-                                               value="{{ region.citypy }}"
-                                               id="city_{{ region.citypy }}"
-                                               {% if region.citypy in selected_cities %}checked{% endif %}>
-                                        <label class="form-check-label" for="city_{{ region.citypy }}">
-                                            {{ region.city }}
-                                        </label>
-                                    </div>
+                                        {% if region.citypy != 'shennongjia' %}
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="cities"
+                                                   value="{{ region.citypy }}"
+                                                   id="city_{{ region.citypy }}"
+                                                   {% if region.citypy in selected_cities %}checked{% endif %}>
+                                            <label class="form-check-label" for="city_{{ region.citypy }}">
+                                                {{ region.city }}
+                                            </label>
+                                        </div>
+                                        {% endif %}
                                     {% endfor %}
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h5>时间范围</h5>
-                                <div class="btn-group" role="group">
-                                    <input type="radio" class="btn-check" name="time_range" id="time_3m"
-                                           value="3m" autocomplete="off"
-                                           {% if time_range == '3m' or not time_range %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary" for="time_3m">最近三个月</label>
-
-                                    <input type="radio" class="btn-check" name="time_range" id="time_1y"
-                                           value="1y" autocomplete="off"
-                                           {% if time_range == '1y' %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary" for="time_1y">最近一年</label>
-
-                                    <input type="radio" class="btn-check" name="time_range" id="time_2y"
-                                           value="2y" autocomplete="off"
-                                           {% if time_range == '2y' %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary" for="time_2y">最近两年</label>
-
-                                    <input type="radio" class="btn-check" name="time_range" id="time_all"
-                                           value="all" autocomplete="off"
-                                           {% if time_range == 'all' %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary" for="time_all">全部时间</label>
-                                </div>
+                        <div class="row mb-4 g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label">开始日期</label>
+                                <input type="month" id="start-date" name="start_date" class="form-control" value="{{ start_date }}">
                             </div>
-                        </div>
 
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-chart-line"></i> 生成图表
-                                </button>
-                                <a href="{% url 'price:price_list' %}" class="btn btn-secondary">
-                                    <i class="fas fa-list"></i> 信息价列表
-                                </a>
+                            <div class="col-md-4">
+                                <label class="form-label">结束日期</label>
+                                <input type="month" id="end-date" name="end_date" class="form-control" value="{{ end_date }}">
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-chart-line"></i> 应用筛选
+                                    </button>
+                                    <button type="button" id="view-all-data" class="btn btn-secondary">
+                                        <i class="fas fa-globe"></i> 查看全部数据
+                                    </button>
+                                    <a href="{% url 'price:price_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-list"></i> 信息价列表
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </form>
@@ -94,9 +87,75 @@
     </div>
 </div>
 
-{% if selected_cities %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // 默认选中武汉
+    const wuhanCheckbox = document.getElementById('city_wuhan');
+    if (wuhanCheckbox && document.querySelectorAll('input[name="cities"]:checked').length === 0) {
+        wuhanCheckbox.checked = true;
+    }
+
+    // 检查是否有选中的城市，如果没有则默认选中武汉
+    const selectedCitiesCheckboxes = document.querySelectorAll('input[name="cities"]:checked');
+    if (selectedCitiesCheckboxes.length === 0) {
+        const wuhanCheckbox = document.getElementById('city_wuhan');
+        if (wuhanCheckbox) {
+            wuhanCheckbox.checked = true;
+        }
+    }
+
+    // 从URL中获取城市参数并加载图表
+    const urlParams = new URLSearchParams(window.location.search);
+    const citiesFromUrl = urlParams.getAll('cities');
+
+    if (citiesFromUrl.length > 0) {
+        loadChart(citiesFromUrl);
+    } else {
+        // 如果URL中没有城市参数，则使用页面上选中的城市
+        const selectedCities = Array.from(document.querySelectorAll('input[name="cities"]:checked'))
+                                    .map(cb => cb.value);
+        if (selectedCities.length > 0) {
+            loadChart(selectedCities);
+        }
+    }
+
+    // 全选功能
+    document.getElementById('select-all-cities').addEventListener('click', function() {
+        document.querySelectorAll('input[name="cities"]').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+    });
+
+    // 取消全选功能
+    document.getElementById('deselect-all-cities').addEventListener('click', function() {
+        document.querySelectorAll('input[name="cities"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+    });
+
+    // 查看全部数据按钮功能
+    document.getElementById('view-all-data').addEventListener('click', function() {
+        // 获取当前选中的城市
+        const cityCheckboxes = document.querySelectorAll('input[name="cities"]:checked');
+        const selectedCities = Array.from(cityCheckboxes).map(cb => cb.value);
+
+        if (selectedCities.length === 0) {
+            alert('请至少选择一个城市');
+            return;
+        }
+
+        // 构建URL参数，只包含城市，不包含时间范围
+        const params = new URLSearchParams();
+        selectedCities.forEach(city => {
+            params.append('cities', city);
+        });
+
+        // 重新加载页面，只保留城市参数
+        window.location.search = params.toString();
+    });
+});
+
+function loadChart(selectedCities) {
     // 检查Chart.js是否已加载
     if (typeof Chart === 'undefined') {
         console.error('Chart.js未正确加载');
@@ -107,23 +166,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 显示加载提示
     const chartContainer = document.querySelector('.chart-container');
+    if (!chartContainer) return;
+
     chartContainer.innerHTML = '<div class="d-flex justify-content-center align-items-center" style="height: 100%;"><div class="spinner-border" role="status"><span class="sr-only">加载中...</span></div></div>';
 
-    // 获取选中的城市
-    const cityCheckboxes = document.querySelectorAll('input[name="cities"]:checked');
-    const selectedCities = Array.from(cityCheckboxes).map(cb => cb.value);
+    // 获取时间范围参数
+    const startDate = document.getElementById('start-date') ? document.getElementById('start-date').value : '';
+    const endDate = document.getElementById('end-date') ? document.getElementById('end-date').value : '';
 
-    if (selectedCities.length === 0) {
-        chartContainer.innerHTML = '<div class="alert alert-warning"><h4><i class="icon fas fa-exclamation-triangle"></i> 提示</h4><p>请选择至少一个城市</p></div>';
-        return;
-    }
-
-    // 获取选中的时间范围
-    const timeRangeRadio = document.querySelector('input[name="time_range"]:checked');
-    const timeRange = timeRangeRadio ? timeRangeRadio.value : '3m';
+    // 构建查询参数
+    let params = new URLSearchParams();
+    selectedCities.forEach(city => {
+        params.append('cities', city);
+    });
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
 
     // 获取图表数据
-    fetch("{% url 'price:price_chart_data' %}?cities=" + encodeURIComponent(selectedCities.join(',')) + "&time_range=" + encodeURIComponent(timeRange))
+    fetch("{% url 'price:price_chart_data' %}?" + params.toString())
         .then(response => {
             if (!response.ok) {
                 throw new Error('网络响应错误: ' + response.status);
@@ -209,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error fetching chart data:', error);
             chartContainer.innerHTML = '<div class="alert alert-danger"><h4><i class="icon fas fa-exclamation-triangle"></i> 错误</h4><p>获取图表数据失败: ' + error.message + '</p><button class="btn btn-primary" onclick="location.reload()">重新加载</button></div>';
         });
-});
+}
 
 // 表单提交事件处理
 document.getElementById('chartForm').addEventListener('submit', function(e) {
@@ -224,14 +284,17 @@ document.getElementById('chartForm').addEventListener('submit', function(e) {
         return;
     }
 
-    // 获取选中的时间范围
-    const timeRangeRadio = document.querySelector('input[name="time_range"]:checked');
-    const timeRange = timeRangeRadio ? timeRangeRadio.value : '3m';
+    // 获取日期范围
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
 
     // 构建URL参数
     const params = new URLSearchParams();
-    params.append('cities', selectedCities.join(','));
-    params.append('time_range', timeRange);
+    selectedCities.forEach(city => {
+        params.append('cities', city);
+    });
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
 
     // 重新加载页面
     window.location.search = params.toString();
@@ -280,6 +343,17 @@ document.getElementById('chartForm').addEventListener('submit', function(e) {
     border-color: #0d6efd;
     color: white;
 }
+
+/* 响应式按钮布局 */
+@media (max-width: 768px) {
+    .d-flex.flex-wrap.gap-2 {
+        flex-direction: column;
+    }
+
+    .d-flex.flex-wrap.gap-2 .btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}
 </style>
-{% endif %}
 {% endblock %}
